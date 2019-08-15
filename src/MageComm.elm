@@ -1,0 +1,1 @@
+-- This file will house the functions and types needed for communicating with the Magento API
