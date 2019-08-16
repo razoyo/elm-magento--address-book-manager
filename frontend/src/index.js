@@ -5,7 +5,7 @@ const app = require('./Main.elm')
   .Main
   .init({ 
     node: document.querySelector("elm-addr"),
-    flags: cookieMessage
+    flags: ""
   });
 
 function sendToElm(messageData) { 
@@ -20,9 +20,7 @@ app.ports.toJs.subscribe(data => handlePortMessage(data));
 function handlePortMessage(data) {
   let command = data.command;
   switch(command) {
-  // TODO
-      break;
-
+    // TODO
     default:
       console.log("unexpected command value | ", command)
   }

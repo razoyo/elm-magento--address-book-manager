@@ -4,9 +4,10 @@ import Browser
 
 -- We're using elm-ui for styling
 import Element exposing (..)
-
 import Element.Events exposing (onClick)
 import Element.Input as Input
+
+import Html exposing (Html)
 
 import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
 import Json.Encode exposing (Value)
@@ -23,7 +24,8 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  fromJs Changed
+  -- fromJs Changed
+  Sub.none
 -- this gets us communication from the ports where we'll have to receive some of the key information like user/session, etc.
 
 
@@ -32,7 +34,8 @@ type alias Model = {}
 
 -- 
 init : String -> ( Model, Cmd Msg )
-init flags =
+init _ =
+  ( {}, Cmd.none )
   -- return model and inital command
 
 -- UPDATE
@@ -42,6 +45,9 @@ type Msg = Changed Value
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
+  case msg of
+    Changed message ->
+      ( model, Cmd.none )
   -- what to do with Update Msgs
 
 -- VIEW
@@ -51,5 +57,7 @@ view model =
   layout []
     <|
       column [] [
-        row [] []  
+        row [] [
+          el [] (text "Hello World")
+        ]  
       ]
