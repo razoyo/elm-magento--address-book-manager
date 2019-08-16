@@ -12,9 +12,8 @@ function sendToElm(messageData) {
   app.ports.fromJs.send(messageData);
 }
 
-// sendToElm(groups.lname001[0]);
-
-app.ports.toJs.subscribe(data => handlePortMessage(data));
+// subscribe to messages from Elm - will eventually use this for caching state if necessary
+// app.ports.toJs.subscribe(data => handlePortMessage(data));
 
 
 function handlePortMessage(data) {
