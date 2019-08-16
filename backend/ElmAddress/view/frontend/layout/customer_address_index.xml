@@ -2,6 +2,6 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceBlock name="address_book" template="Razoyo_ElmAddress::address/elm-address.phtml"/>
-        <referenceBlock name="address_grid" template="Razoyo_ElmAddress::address/elm-address.phtml"/>
+        <referenceBlock name="address_grid" remove="true"/>
     </body>
 </page>
