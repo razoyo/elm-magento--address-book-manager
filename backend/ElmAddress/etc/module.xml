@@ -2,5 +2,9 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.x
 sd">
     <module name="Razoyo_ElmAddress" setup_version="1.0.0">
+        <sequence>
+            <!-- @razoyo: this module must load after Magento_CustomerCustomAttributes -->
+            <module name="Magento_CustomerCustomAttributes"/>
+        </sequence>
     </module>
 </config>
