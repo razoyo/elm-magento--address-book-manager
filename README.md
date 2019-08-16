@@ -22,5 +22,8 @@ So, you'll need your own instance of Magento up and running if you want to test 
 #### Front End
 We're using webpack so that you can spin up Elm and work interactively with it. We have not yet set up stubs for the html file to target in dev mode and associated stub data to use.
 
+### Building the runtime js file
+Use the command npm run make:js from the frontend folder. It will build the elm-address.js file and output it to backend/ElmAddress/etc/view/frontend/web/js - thus, when deployed, it should be in the right place to get picked up by Magento (we'll make that happen - has not been tested yet)
+
 ### Testing
 Given the limited scope of development and Elm's advantages, we aren't planning to write extensive tests as part of the development process. However, we reserve the right to create some. If we do, we'll use the native Elm testing functions. 

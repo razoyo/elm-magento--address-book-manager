@@ -9,7 +9,8 @@
     "clean": "rimraf dist/*",
     "build": "npm-run-all clean build:*",
     "build:scripts": "NODE_ENV=production webpack --mode production",
-    "build:images": "cpx 'assets/images/**' dist/assets/images"
+    "build:images": "cpx 'assets/images/**' dist/assets/images",
+    "make:js":"elm make src/Main.elm --output=../backend/ElmAddress/view/frontend/web/js/elm-address.js"
   },
   "repository": {
     "type": "git",
