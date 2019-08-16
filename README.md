@@ -10,3 +10,17 @@ Want to help? Pick up an issue from the [Project section](https://github.com/raz
 ### Setup
 You'll need to have webpack installed if you want to test in a local environment.
 We're also using elm-ui for the styling. You can read more about Elm-inspired styling [here](https://github.com/mdgriffith/elm-ui).
+
+### Working on this project
+The Magento module that will replace the address book area with our Elm app is in the backend folder. All of the code for the Elm app is in the frontend folder.
+
+#### Back End
+We have not tested this, yet, in terms of inserting, but, the idea is that you will add the module to a Magento 2.3.x site and drop the production-ready elm-address.js file into backend/ElmAddress/view/frontend/web/js/
+
+So, you'll need your own instance of Magento up and running if you want to test out your code there.
+
+#### Front End
+We're using webpack so that you can spin up Elm and work interactively with it. We have not yet set up stubs for the html file to target in dev mode and associated stub data to use.
+
+### Testing
+Given the limited scope of development and Elm's advantages, we aren't planning to write extensive tests as part of the development process. However, we reserve the right to create some. If we do, we'll use the native Elm testing functions. 
