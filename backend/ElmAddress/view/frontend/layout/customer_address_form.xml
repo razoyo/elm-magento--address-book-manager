@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <script src="Razoyo_ElmAddress::js/elm-address.js"/>
+    </head>
     <body>
         <!-- @razoyo: deprecated method required to override Magento's use of this method in core file 
         vendor/magento/module-customer-custom-attributes/view/frontend/layout/customer_address_form.xml -->
