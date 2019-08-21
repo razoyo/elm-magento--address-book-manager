@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <script src="Razoyo_ElmAddress::js/elm-address.js"/>
+    </head>
     <body>
         <referenceBlock name="address_book" template="Razoyo_ElmAddress::address/elm-address.phtml"/>
         <referenceBlock name="address_grid" remove="true"/>
