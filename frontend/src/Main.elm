@@ -30,18 +30,21 @@ subscriptions model =
 
 
 -- MODEL
-type alias Model = {}
+type alias Model = {
+    firstName :  String
+  }
 
 -- 
 init : String -> ( Model, Cmd Msg )
 init _ =
-  ( {}, Cmd.none )
+  ( { firstName = ""
+    }, Cmd.none )
   -- return model and inital command
 
 -- UPDATE
 
 type Msg = Changed Value
-  -- add other messages here
+  | UpdateFirstName String
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
@@ -49,6 +52,12 @@ update msg model =
     Changed message ->
       ( model, Cmd.none )
   -- what to do with Update Msgs
+    
+    UpdateFirstName name ->
+      ( { model | firstName = name }
+      , Cmd.none 
+      )
+
 
 -- VIEW
 
@@ -58,6 +67,11 @@ view model =
     <|
       column [] [
         row [] [
-          el [] (text "Hello World")
+          Input.text [] 
+            { onChange = UpdateFirstName
+            , text = model.firstName
+            , placeholder = Nothing
+            , label = Input.labelLeft [] ( text "First Name" )
+            }
         ]  
       ]
