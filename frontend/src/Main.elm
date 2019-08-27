@@ -31,9 +31,11 @@ subscriptions model =
 
 
 -- MODEL
-type alias Model = {
-    firstName :  String
+type alias Address = { id : String
+    , firstName :  String
     , lastName : String
+    , company : String
+    , phone : String
     , street1 : String
     , street2 : String
     , street3 : String
@@ -41,21 +43,24 @@ type alias Model = {
     , state : String
     , postalCode : String
     , country : String
+    , isDefaultShipping : Bool
+    , isDefaultBilling : Bool
+  }
+
+
+type alias Model = {
+    addresses : List Address
+    , targetAddress : Int
   }
 
 -- 
 init : String -> ( Model, Cmd Msg )
 init _ =
-  ( { firstName = ""
-    , lastName = ""
-    , street1 = ""
-    , street2 = ""
-    , street3 = ""
-    , city = ""
-    , state = ""
-    , postalCode = ""
-    , country = ""
-    }, Cmd.none )
+  ( { addresses = []
+    , targetAddress = 1
+    } 
+   , Cmd.none 
+   )
   -- return model and inital command
 
 -- UPDATE
@@ -70,6 +75,7 @@ type Msg = Changed Value
   | UpdateState String
   | UpdatePostalcode String
   | UpdateCountry String
+  | SelectTargetAddress String
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
@@ -139,7 +145,7 @@ view model =
             { onChange = UpdateFirstName
             , text = model.firstName
             , placeholder = Nothing
-            , label = Input.labelLeft [ centerY ] ( text "First Name" )
+            , label = Input.labelAbove [ centerY ] ( text "First Name" )
             }
           , Input.text [ alignTop
             , width ( fillPortion 2 )  
@@ -148,7 +154,7 @@ view model =
             { onChange = UpdateLastName
             , text = model.lastName
             , placeholder = Nothing
-            , label = Input.labelLeft [ centerY ] ( text "Last Name" )
+            , label = Input.labelAbove [ centerY ] ( text "Last Name" )
             }
           , column [ alignTop
             , width ( fillPortion 3 |> minimum 300 )  
@@ -159,7 +165,7 @@ view model =
               { onChange = UpdateStreet1
               , text = model.street1
               , placeholder = Nothing
-              , label = Input.labelLeft [ centerY ] ( text "Address" )
+              , label = Input.labelAbove [ centerY ] ( text "Address" )
               }
             , Input.text [ alignRight
               , htmlAttribute (Html.Attributes.id "street_2") 
@@ -185,7 +191,7 @@ view model =
             { onChange = UpdateCity
             , text = model.city
             , placeholder = Nothing
-            , label = Input.labelLeft [ centerY ] ( text "City" )
+            , label = Input.labelAbove [ centerY ] ( text "City" )
             }
           , Input.text [ alignTop
             , width ( fillPortion 1 )
@@ -194,7 +200,7 @@ view model =
             { onChange = UpdateState
             , text = model.state
             , placeholder = Nothing
-            , label = Input.labelLeft [ centerY ] ( text "State" )
+            , label = Input.labelAbove [ centerY ] ( text "State" )
             }
           , Input.text [ alignTop
             , width ( fillPortion 2 )  
@@ -203,7 +209,7 @@ view model =
             { onChange = UpdatePostalcode
             , text = model.postalCode
             , placeholder = Nothing
-            , label = Input.labelLeft [ centerY ] ( text "ZipCode" )
+            , label = Input.labelAbove [ centerY ] ( text "ZipCode" )
             }
           , Input.text [ alignTop
             , width ( fillPortion 2 )
@@ -212,7 +218,7 @@ view model =
             { onChange = UpdateCountry
             , text = model.country
             , placeholder = Nothing
-            , label = Input.labelLeft [ centerY ] ( text "Country" )
+            , label = Input.labelAbove [ centerY ] ( text "Country" )
             }
         ]  
       ]
