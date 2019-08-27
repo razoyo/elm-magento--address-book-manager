@@ -8,6 +8,7 @@ import Element.Events exposing (onClick)
 import Element.Input as Input
 
 import Html exposing (Html)
+import Html.Attributes
 
 import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
 import Json.Encode exposing (Value)
@@ -131,57 +132,83 @@ view model =
     <|
       column [ width fill ] [
         wrappedRow [ padding 5, spacing 10] [
-          Input.text [ alignTop, width ( fillPortion 2 ) ] 
+          Input.text [ alignTop 
+            , width ( fillPortion 2 )
+            , htmlAttribute (Html.Attributes.id "first_name") 
+            ] 
             { onChange = UpdateFirstName
             , text = model.firstName
             , placeholder = Nothing
             , label = Input.labelLeft [ centerY ] ( text "First Name" )
             }
-          , Input.text [ alignTop, width ( fillPortion 2 )  ] 
+          , Input.text [ alignTop
+            , width ( fillPortion 2 )  
+            , htmlAttribute (Html.Attributes.id "last_name") 
+            ] 
             { onChange = UpdateLastName
             , text = model.lastName
             , placeholder = Nothing
             , label = Input.labelLeft [ centerY ] ( text "Last Name" )
             }
-          , column [ alignTop, width ( fillPortion 3 |> minimum 300 )  ] [
-            Input.text [ alignRight ] 
+          , column [ alignTop
+            , width ( fillPortion 3 |> minimum 300 )  
+            ] [
+            Input.text [ alignRight
+              , htmlAttribute (Html.Attributes.id "street_1") 
+              ] 
               { onChange = UpdateStreet1
               , text = model.street1
               , placeholder = Nothing
               , label = Input.labelLeft [ centerY ] ( text "Address" )
               }
-            , Input.text [alignRight] 
+            , Input.text [ alignRight
+              , htmlAttribute (Html.Attributes.id "street_2") 
+              ] 
               { onChange = UpdateStreet2
               , text = model.street2
               , placeholder = Nothing
               , label = Input.labelHidden "Address line 2"
               }
-            , Input.text [alignRight] 
+            , Input.text [ alignRight
+              , htmlAttribute (Html.Attributes.id "street_3") 
+              ] 
               { onChange = UpdateStreet3
               , text = model.street3
               , placeholder = Nothing
               , label = Input.labelHidden "Address line 3"
               }
           ]
-          , Input.text [ alignTop, width ( fillPortion 2 )  ]
+          , Input.text [ alignTop
+            , width ( fillPortion 2 )  
+            , htmlAttribute (Html.Attributes.id "city") 
+            ]
             { onChange = UpdateCity
             , text = model.city
             , placeholder = Nothing
             , label = Input.labelLeft [ centerY ] ( text "City" )
             }
-          , Input.text [ alignTop, width ( fillPortion 1 )  ]
+          , Input.text [ alignTop
+            , width ( fillPortion 1 )
+            , htmlAttribute (Html.Attributes.id "region") 
+            ]
             { onChange = UpdateState
             , text = model.state
             , placeholder = Nothing
             , label = Input.labelLeft [ centerY ] ( text "State" )
             }
-          , Input.text [ alignTop, width ( fillPortion 2 )  ]
+          , Input.text [ alignTop
+            , width ( fillPortion 2 )  
+            , htmlAttribute (Html.Attributes.id "post_code") 
+            ]
             { onChange = UpdatePostalcode
             , text = model.postalCode
             , placeholder = Nothing
             , label = Input.labelLeft [ centerY ] ( text "ZipCode" )
             }
-          , Input.text [ alignTop, width ( fillPortion 2 )  ]
+          , Input.text [ alignTop
+            , width ( fillPortion 2 )
+            , htmlAttribute (Html.Attributes.id "country") 
+            ]
             { onChange = UpdateCountry
             , text = model.country
             , placeholder = Nothing
