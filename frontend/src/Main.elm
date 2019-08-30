@@ -7,11 +7,14 @@ import Element exposing (..)
 import Element.Events exposing (onClick)
 import Element.Input as Input
 
+-- Elm core modules needed
 import Html exposing (Html)
 import Html.Attributes
-
 import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
 import Json.Encode exposing (Value)
+
+-- Local project modules
+import Stub exposing (Address, )
 
 main =
   Browser.element
@@ -31,21 +34,6 @@ subscriptions model =
 
 
 -- MODEL
-type alias Address = { id : String
-    , firstName :  String
-    , lastName : String
-    , company : String
-    , phone : String
-    , street1 : String
-    , street2 : String
-    , street3 : String
-    , city : String
-    , state : String
-    , postalCode : String
-    , country : String
-    , isDefaultShipping : Bool
-    , isDefaultBilling : Bool
-  }
 
 
 type alias Model = {
