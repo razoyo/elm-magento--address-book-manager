@@ -11,6 +11,8 @@ Want to help? Pick up an issue from the [Project section](https://github.com/raz
 You'll need to have webpack installed if you want to test in a local environment.
 We're also using elm-ui for the styling. You can read more about Elm-inspired styling [here](https://github.com/mdgriffith/elm-ui).
 
+The auto-populate feature depends on Loqate. You will need to get a Loqate account and add the tracking code to the head of the page. For simplicity's sake, we added the id in the Magento admin panel. Loqate works independently from Magento and Elm, however, the ability to use a plain-vanilla JS app in connection with ELM is part of the beauty of it. To get the auto-add to work, simply add a new project and go through the process of mapping it to the site. No require.js, no mess!
+
 ### Working on this project
 The Magento module that will replace the address book area with our Elm app is in the backend folder. All of the code for the Elm app is in the frontend folder.
 
@@ -32,3 +34,17 @@ For now... we'll worry about the flags later.
 
 ### Testing
 Given the limited scope of development and Elm's advantages, we aren't planning to write extensive tests as part of the development process. However, we reserve the right to create some. If we do, we'll use the native Elm testing functions. 
+
+## Architecture Basics
+### Processes
+#### Displaying the addresses from Magento
+Upon loading the Elm app will send a message to Magento requesting the addresses for the currently logged in customer.
+Elm will map the JSON response into a List of Records - each Record will have the address fields plus the Magento ID for the address. Each item in the list will have an index number.
+If there are no addresses, only a button for adding addresses will appear.
+Each address will appear as a row in a table.
+
+#### Selecting an address to work with
+Clicking anywhere on an address row in the table 'activates' the address for updating. It will set the 'targetAddress' in the model to that address and switch out the display tags with input tags. It will copy the active addresses fields to the root address fields in the model.
+
+#### Updating and address
+The model will update the 'root' address fields in the model with the 
