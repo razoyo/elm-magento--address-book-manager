@@ -8,13 +8,14 @@ import Element.Events exposing (onClick)
 import Element.Input as Input
 
 -- Elm core modules needed
+import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
 import Json.Encode exposing (Value)
 
--- Local project modules
-import Stub exposing (Address, )
+-- Local app imports
+import Stub exposing (Address)
 
 main =
   Browser.element
@@ -35,35 +36,38 @@ subscriptions model =
 
 -- MODEL
 
-
 type alias Model = {
-    addresses : List Address
-    , targetAddress : Int
+    uiStatus : UIStates
+    , addresses : Stub.Addresses
   }
+
+
+type UIStates = View 
+  | AddNew 
+  | Edit Int
+
+
+newAddress : Address
+newAddress = 
+  Address -1 "" "" "" "" "" [] "" "" "" "" "" ""
 
 -- 
 init : String -> ( Model, Cmd Msg )
 init _ =
-  ( { addresses = []
-    , targetAddress = 1
+  ( { uiStatus = View
+    , addresses = Stub.addresses
     } 
-   , Cmd.none 
+   , Cmd.none -- this will be the command to return the addresses from Magento in production
    )
   -- return model and inital command
 
 -- UPDATE
 
 type Msg = Changed Value
-  | UpdateFirstName String
-  | UpdateLastName String
-  | UpdateStreet1 String
-  | UpdateStreet2 String
-  | UpdateStreet3 String
-  | UpdateCity String
-  | UpdateState String
-  | UpdatePostalcode String
-  | UpdateCountry String
-  | SelectTargetAddress String
+  | RemoveAddress Int
+  | EditAddress Int
+  | CreateAddress
+  | ViewAddresses
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
@@ -72,50 +76,20 @@ update msg model =
       ( model, Cmd.none )
   -- what to do with Update Msgs
     
-    UpdateFirstName name ->
-      ( { model | firstName = name }
-      , Cmd.none 
-      )
+    EditAddress addressId ->
+      ( { model | uiStatus = Edit addressId }, Cmd.none )
 
-    UpdateLastName name ->
-      ( { model | lastName = name }
-      , Cmd.none 
-      )
+    RemoveAddress addressId ->
+      ( { model | 
+          addresses = Dict.remove addressId model.addresses
+        }
+      , Cmd.none ) -- add Cmd to remove address from Magento
 
-    UpdateStreet1 street ->
-      ( { model | street1 = street }
-      , Cmd.none 
-      )
+    CreateAddress ->
+      ( { model | uiStatus = AddNew }, Cmd.none )
 
-    UpdateStreet2 street ->
-      ( { model | street2 = street }
-      , Cmd.none 
-      )
-
-    UpdateStreet3 street ->
-      ( { model | street3 = street }
-      , Cmd.none 
-      )
-
-    UpdateCity city ->
-      ( { model | city = city }
-      , Cmd.none 
-      )
-
-    UpdateState state ->
-      ( { model | state = state }
-      , Cmd.none 
-      )
-
-    UpdatePostalcode code ->
-      ( { model | postalCode = code }
-      , Cmd.none 
-      )
-
-    UpdateCountry country ->
-      ( { model | country = country }
-      , Cmd.none 
-      )
+    ViewAddresses ->
+      ( { model | uiStatus = View }, Cmd.none )
 
 
 -- VIEW
@@ -124,89 +98,66 @@ view : Model -> Html Msg
 view model =
   layout []
     <|
-      column [ width fill ] [
-        wrappedRow [ padding 5, spacing 10] [
-          Input.text [ alignTop 
-            , width ( fillPortion 2 )
-            , htmlAttribute (Html.Attributes.id "first_name") 
-            ] 
-            { onChange = UpdateFirstName
-            , text = model.firstName
-            , placeholder = Nothing
-            , label = Input.labelAbove [ centerY ] ( text "First Name" )
-            }
-          , Input.text [ alignTop
-            , width ( fillPortion 2 )  
-            , htmlAttribute (Html.Attributes.id "last_name") 
-            ] 
-            { onChange = UpdateLastName
-            , text = model.lastName
-            , placeholder = Nothing
-            , label = Input.labelAbove [ centerY ] ( text "Last Name" )
-            }
-          , column [ alignTop
-            , width ( fillPortion 3 |> minimum 300 )  
-            ] [
-            Input.text [ alignRight
-              , htmlAttribute (Html.Attributes.id "street_1") 
-              ] 
-              { onChange = UpdateStreet1
-              , text = model.street1
-              , placeholder = Nothing
-              , label = Input.labelAbove [ centerY ] ( text "Address" )
-              }
-            , Input.text [ alignRight
-              , htmlAttribute (Html.Attributes.id "street_2") 
-              ] 
-              { onChange = UpdateStreet2
-              , text = model.street2
-              , placeholder = Nothing
-              , label = Input.labelHidden "Address line 2"
-              }
-            , Input.text [ alignRight
-              , htmlAttribute (Html.Attributes.id "street_3") 
-              ] 
-              { onChange = UpdateStreet3
-              , text = model.street3
-              , placeholder = Nothing
-              , label = Input.labelHidden "Address line 3"
-              }
+      case model.uiStatus of
+        View ->
+          column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
+            , wrappedRow [ width fill, padding 10 ] ( showAddresses model.addresses ) 
+            ]
+
+        AddNew ->
+          column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
+            , wrappedRow [] [ el [] (text "Add New Address") ]
+            ]
+
+        Edit addressId ->
+          column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
+            , wrappedRow [ width fill, padding 10 ] [ showAddress addressId model.addresses ]
           ]
-          , Input.text [ alignTop
-            , width ( fillPortion 2 )  
-            , htmlAttribute (Html.Attributes.id "city") 
-            ]
-            { onChange = UpdateCity
-            , text = model.city
-            , placeholder = Nothing
-            , label = Input.labelAbove [ centerY ] ( text "City" )
-            }
-          , Input.text [ alignTop
-            , width ( fillPortion 1 )
-            , htmlAttribute (Html.Attributes.id "region") 
-            ]
-            { onChange = UpdateState
-            , text = model.state
-            , placeholder = Nothing
-            , label = Input.labelAbove [ centerY ] ( text "State" )
-            }
-          , Input.text [ alignTop
-            , width ( fillPortion 2 )  
-            , htmlAttribute (Html.Attributes.id "post_code") 
-            ]
-            { onChange = UpdatePostalcode
-            , text = model.postalCode
-            , placeholder = Nothing
-            , label = Input.labelAbove [ centerY ] ( text "ZipCode" )
-            }
-          , Input.text [ alignTop
-            , width ( fillPortion 2 )
-            , htmlAttribute (Html.Attributes.id "country") 
-            ]
-            { onChange = UpdateCountry
-            , text = model.country
-            , placeholder = Nothing
-            , label = Input.labelAbove [ centerY ] ( text "Country" )
-            }
-        ]  
-      ]
+
+
+showAddresses : Stub.Addresses -> List ( Element Msg )
+showAddresses addresses =
+  
+  Dict.values addresses
+    |> \x -> List.map viewAddress x
+
+
+showAddress : Int -> Stub.Addresses -> Element Msg -- May not need this function in final version | only reason to show single address is to edit it
+showAddress addressId addresses =
+  
+  Dict.get addressId addresses
+    |> \y -> Maybe.withDefault newAddress y
+    |> \x -> viewAddress x
+
+
+viewAddress : Address -> Element Msg
+viewAddress address =
+  column [ width fill, spacing 10, padding 5, alignTop ] [
+     text ( composeName address )
+     , composeStreetBlock address.street
+     , row [] [ el [] (text address.city)
+       , el [] (text address.region)
+       , el [] (text address.postalCode)
+     ]
+     , el [] (text address.country)
+     , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
+     , el [ onClick (EditAddress address.mageId) ] (text "edit")
+     ]
+
+
+composeName : Address -> String
+composeName address =
+  address.prefix
+  ++ " "
+  ++ address.firstName
+  ++ " "
+  ++ address.middleName
+  ++ " "
+  ++ address.lastName
+  ++ " "
+  ++ address.suffix
+
+
+composeStreetBlock : List String -> Element msg
+composeStreetBlock streetAddresses =
+  column [] ( List.map (\x -> el [] (text x) ) streetAddresses )

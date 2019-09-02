@@ -1,5 +1,6 @@
 **/node_modules/
 .env
+favicon.ico
 
 *.swp
 *.swo
