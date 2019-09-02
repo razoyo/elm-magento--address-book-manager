@@ -39,6 +39,7 @@ subscriptions model =
 type alias Model = {
     uiStatus : UIStates
     , addresses : Stub.Addresses
+    , editingAddress : Address
   }
 
 
@@ -56,6 +57,7 @@ init : String -> ( Model, Cmd Msg )
 init _ =
   ( { uiStatus = View
     , addresses = Stub.addresses
+    , editingAddress = newAddress
     } 
    , Cmd.none -- this will be the command to return the addresses from Magento in production
    )
@@ -68,6 +70,7 @@ type Msg = Changed Value
   | EditAddress Int
   | CreateAddress
   | ViewAddresses
+  | SetEditingAddressValue String String
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
@@ -77,7 +80,9 @@ update msg model =
   -- what to do with Update Msgs
     
     EditAddress addressId ->
-      ( { model | uiStatus = Edit addressId }, Cmd.none )
+      ( { model | uiStatus = Edit addressId
+        , editingAddress = Dict.get addressId model.addresses |> \x -> Maybe.withDefault newAddress x  
+        }, Cmd.none )
 
     RemoveAddress addressId ->
       ( { model | 
@@ -90,6 +95,10 @@ update msg model =
 
     ViewAddresses ->
       ( { model | uiStatus = View }, Cmd.none )
+
+    SetEditingAddressValue field value ->
+      ( { model | editingAddress = ( editingAddress | field = value ) }
+      , Cmd.none )
 
 
 -- VIEW
@@ -150,16 +159,27 @@ viewAddress address =
 viewEditAddress : Address -> Element Msg
 viewEditAddress address =
   column [ width fill, spacing 10, padding 5, alignTop ] [
-     text ( composeName address )
-     , composeStreetBlock address.street
-     , row [] [ el [] (text address.city)
-       , el [] (text address.region)
-       , el [] (text address.postalCode)
-     ]
-     , el [] (text address.country)
-     , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
-     , el [ onClick (EditAddress address.mageId) ] (text "edit")
-     ]
+    row [] [ Input.text [] { label = Input.labelLeft [] (text "Prefix")
+      , text = address.prefix
+      , placeholder = Just (Input.placeholder []( text address.prefix ))
+      , onChange = SetEditingAddressValue "prefix"
+      } 
+    ]
+    , row [] [ Input.text [] { label = Input.labelLeft [] (text "First Name")
+      , text = address.firstName
+      , placeholder = Just (Input.placeholder []( text address.firstName ))
+      , onChange = SetEditingAddressValue "firstName"
+      } 
+    ]
+    , text ( composeName address )
+    , composeStreetBlock address.street
+    , row [] [ el [] (text address.city)
+      , el [] (text address.region)
+      , el [] (text address.postalCode)
+    ]
+    , el [] (text address.country)
+    , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
+    ]
 
 
 composeName : Address -> String
