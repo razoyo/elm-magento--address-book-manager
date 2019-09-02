@@ -165,13 +165,13 @@ viewEditAddress address =
 composeName : Address -> String
 composeName address =
   address.prefix
-  ++ " "
+  ++ if address.prefix /= "" then " " else ""
   ++ address.firstName
   ++ " "
   ++ address.middleName
-  ++ " "
+  ++ if address.middleName /= "" then " " else ""
   ++ address.lastName
-  ++ " "
+  ++ if address.suffix /= "" then " " else ""
   ++ address.suffix
 
 
