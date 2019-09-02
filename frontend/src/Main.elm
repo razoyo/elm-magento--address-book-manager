@@ -49,7 +49,7 @@ type UIStates = View
 
 newAddress : Address
 newAddress = 
-  Address -1 "" "" "" "" "" [] "" "" "" "" "" ""
+  Address -1 "" "" "" "" "" [] "" "" "" "" "" "" False False
 
 -- 
 init : String -> ( Model, Cmd Msg )
@@ -127,11 +127,28 @@ showAddress addressId addresses =
   
   Dict.get addressId addresses
     |> \y -> Maybe.withDefault newAddress y
-    |> \x -> viewAddress x
+    |> \x -> viewEditAddress x
 
 
 viewAddress : Address -> Element Msg
 viewAddress address =
+  column [ width fill, spacing 10, padding 5, alignTop ] [
+     text ( composeName address )
+     , composeStreetBlock address.street
+     , row [] [ el [] (text address.city)
+       , el [] (text address.region)
+       , el [] (text address.postalCode)
+     ]
+     , el [] (text address.country)
+     , (if address.isDefaultShipping then (el [] (text "Default Shipping"))  else none)
+     , (if address.isDefaultBilling then (el [] (text "Default Billing"))  else none)
+     , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
+     , el [ onClick (EditAddress address.mageId) ] (text "edit")
+     ]
+
+
+viewEditAddress : Address -> Element Msg
+viewEditAddress address =
   column [ width fill, spacing 10, padding 5, alignTop ] [
      text ( composeName address )
      , composeStreetBlock address.street
