@@ -15,7 +15,7 @@ import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
 import Json.Encode exposing (Value)
 
 -- Local app imports
-import Stub exposing (Address)
+import Stub exposing (..)
 
 main =
   Browser.element
@@ -48,6 +48,23 @@ type UIStates = View
   | Edit Int
 
 
+type AddressField = MageId
+  | FirstName 
+  | LastName 
+  | MiddleName 
+  | Prefix 
+  | Suffix 
+  | Street 
+  | Company 
+  | Telephone 
+  | PostalCode 
+  | City 
+  | Region 
+  | Country 
+  | IsDefaultShipping 
+  | IsDefaultBilling 
+  
+  
 newAddress : Address
 newAddress = 
   Address -1 "" "" "" "" "" [] "" "" "" "" "" "" False False
@@ -56,7 +73,7 @@ newAddress =
 init : String -> ( Model, Cmd Msg )
 init _ =
   ( { uiStatus = View
-    , addresses = Stub.addresses
+    , addresses = addresses
     , editingAddress = newAddress
     } 
    , Cmd.none -- this will be the command to return the addresses from Magento in production
@@ -70,7 +87,7 @@ type Msg = Changed Value
   | EditAddress Int
   | CreateAddress
   | ViewAddresses
-  | SetEditingAddressValue String String
+  | SetEditingAddressValue Address AddressField String
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
@@ -96,9 +113,109 @@ update msg model =
     ViewAddresses ->
       ( { model | uiStatus = View }, Cmd.none )
 
-    SetEditingAddressValue field value ->
-      ( { model | editingAddress = ( editingAddress | field = value ) }
-      , Cmd.none )
+    SetEditingAddressValue address field value ->
+       case field of 
+         MageId ->
+           ( model, Cmd.none )
+
+         FirstName ->
+           let
+             editAddress = { address | firstName = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         LastName ->
+           let
+             editAddress = { address | lastName = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         MiddleName ->
+           let
+             editAddress = { address | middleName = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Prefix ->
+           let
+             editAddress = { address | prefix = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Suffix ->
+           let
+             editAddress = { address | suffix = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Street ->
+           let
+             editAddress = { address | street = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Company ->
+           let
+             editAddress = { address | company = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Telephone ->
+           let
+             editAddress = { address | telephone = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         PostalCode ->
+           let
+             editAddress = { address | postalCode = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         City ->
+           let
+             editAddress = { address | city = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Region ->
+           let
+             editAddress = { address | region = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         Country ->
+           let
+             editAddress = { address | country = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         IsDefaultShipping ->
+           let
+             editAddress = { address | isDefaultShipping = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
+         IsDefaultBilling ->
+           let
+             editAddress = { address | isDefaultBilling = value }
+             updateAddresses = Dict.insert address.mageId editAddress model.addresses
+           in
+             ( { model | addresses = updateAddresses }, Cmd.none )
+
 
 
 -- VIEW
@@ -124,14 +241,14 @@ view model =
           ]
 
 
-showAddresses : Stub.Addresses -> List ( Element Msg )
+showAddresses : Addresses -> List ( Element Msg )
 showAddresses addresses =
   
   Dict.values addresses
     |> \x -> List.map viewAddress x
 
 
-showAddress : Int -> Stub.Addresses -> Element Msg -- May not need this function in final version | only reason to show single address is to edit it
+showAddress : Int -> Addresses -> Element Msg -- May not need this function in final version | only reason to show single address is to edit it
 showAddress addressId addresses =
   
   Dict.get addressId addresses
@@ -162,13 +279,13 @@ viewEditAddress address =
     row [] [ Input.text [] { label = Input.labelLeft [] (text "Prefix")
       , text = address.prefix
       , placeholder = Just (Input.placeholder []( text address.prefix ))
-      , onChange = SetEditingAddressValue "prefix"
+      , onChange = SetEditingAddressValue address Prefix
       } 
     ]
     , row [] [ Input.text [] { label = Input.labelLeft [] (text "First Name")
       , text = address.firstName
       , placeholder = Just (Input.placeholder []( text address.firstName ))
-      , onChange = SetEditingAddressValue "firstName"
+      , onChange = SetEditingAddressValue address FirstName
       } 
     ]
     , text ( composeName address )

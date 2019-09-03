@@ -1,4 +1,4 @@
-module Stub exposing (Address, Addresses, addresses)
+module Stub exposing (Addresses, Address, addresses)
 
 import Dict
 
