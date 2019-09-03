@@ -8,6 +8,7 @@ import Element.Events exposing (onClick)
 import Element.Input as Input
 
 -- Elm core modules needed
+import Array
 import Dict
 import Html exposing (Html)
 import Html.Attributes
@@ -46,28 +47,11 @@ type alias Model = {
 type UIStates = View 
   | AddNew 
   | Edit Int
-
-
-type AddressField = MageId Int
-  | FirstName String 
-  | LastName  String
-  | MiddleName  String
-  | Prefix String
-  | Suffix String
-  | Street ( List String )
-  | Company String
-  | Telephone String
-  | PostalCode String 
-  | City String
-  | Region String
-  | Country String
-  | IsDefaultShipping Bool 
-  | IsDefaultBilling Bool
   
   
 newAddress : Address
 newAddress = 
-  Address -1 "" "" "" "" "" [] "" "" "" "" "" "" False False
+  Address -1 "" "" "" "" "" ("","","") "" "" "" "" "" "" False False
 
 -- 
 init : String -> ( Model, Cmd Msg )
@@ -87,10 +71,29 @@ type Msg = Changed Value
   | EditAddress Int
   | CreateAddress
   | ViewAddresses
-  | SetEditingAddressValue Address AddressField
+  | UpdateFirstName String 
+  | UpdateLastName String 
+  | UpdateMiddleName String
+  | UpdatePrefix String
+  | UpdateSuffix String
+  | UpdateFirstStreet String
+  | UpdateSecondStreet String
+  | UpdateThirdStreet String
+  | UpdateCompany String
+  | UpdateTelephone String
+  | UpdatePostalCode String
+  | UpdateCity String
+  | UpdateRegion String
+  | UpdateCountry String
+  | UpdateIsDefaultShipping Bool 
+  | UpdateIsDefaultBilling Bool
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
+  let 
+    editAddress = model.editingAddress
+  in
+
   case msg of
     Changed message ->
       ( model, Cmd.none )
@@ -113,108 +116,120 @@ update msg model =
     ViewAddresses ->
       ( { model | uiStatus = View }, Cmd.none )
 
-    SetEditingAddressValue address field ->
-       case field of 
-         MageId _ ->
-           ( model, Cmd.none )
+    UpdateFirstName newFirst ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | firstName = newFirst }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         FirstName value ->
-           let
-             editAddress = { address | firstName = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateLastName newLast->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | lastName = newLast }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         LastName value ->
-           let
-             editAddress = { address | lastName = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateMiddleName newMiddle ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | middleName = newMiddle }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         MiddleName value ->
-           let
-             editAddress = { address | middleName = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdatePrefix newPrefix ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | prefix = newPrefix }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Prefix value ->
-           let
-             editAddress = { address | prefix = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateSuffix newSuffix ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | suffix = newSuffix }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Suffix value ->
-           let
-             editAddress = { address | suffix = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateFirstStreet newStreet ->
+      let
+        updateAddress = model.editingAddress
+        ( a, b, c ) = updateAddress.street
+        resultAddress = { updateAddress | street = ( newStreet, b, c ) }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Street value ->
-           let
-             editAddress = { address | street = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateSecondStreet newStreet ->
+      let
+        updateAddress = model.editingAddress
+        ( a, b, c ) = updateAddress.street
+        resultAddress = { updateAddress | street = ( a, newStreet, c ) }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Company value ->
-           let
-             editAddress = { address | company = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateThirdStreet newStreet ->
+      let
+        updateAddress = model.editingAddress
+        ( a, b, c ) = updateAddress.street
+        resultAddress = { updateAddress | street = ( a, b, newStreet ) }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Telephone value ->
-           let
-             editAddress = { address | telephone = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateCompany newCompany ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | company = newCompany }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         PostalCode value ->
-           let
-             editAddress = { address | postalCode = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateTelephone newPhone ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | telephone = newPhone }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         City value ->
-           let
-             editAddress = { address | city = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdatePostalCode newPostal ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | postalCode = newPostal }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Region value ->
-           let
-             editAddress = { address | region = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateCity newCity ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | city = newCity }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         Country value ->
-           let
-             editAddress = { address | country = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateRegion newRegion ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | region = newRegion }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         IsDefaultShipping value ->
-           let
-             editAddress = { address | isDefaultShipping = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateCountry newCountry ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | country = newCountry }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
-         IsDefaultBilling value ->
-           let
-             editAddress = { address | isDefaultBilling = value }
-             updateAddresses = Dict.insert address.mageId editAddress model.addresses
-           in
-             ( { model | addresses = updateAddresses }, Cmd.none )
+    UpdateIsDefaultShipping newDefaultShipping ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | isDefaultShipping = newDefaultShipping }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
+
+    UpdateIsDefaultBilling newDefaultBilling ->
+      let
+        updateAddress = model.editingAddress 
+        resultAddress = { updateAddress | isDefaultBilling = newDefaultBilling }
+      in
+        ( { model | editingAddress = resultAddress }, Cmd.none )
 
 
 
@@ -237,7 +252,7 @@ view model =
 
         Edit addressId ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
-            , wrappedRow [ width fill, padding 10 ] [ showAddress addressId model.addresses ]
+            , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model.editingAddress ]
           ]
 
 
@@ -276,20 +291,33 @@ viewAddress address =
 viewEditAddress : Address -> Element Msg
 viewEditAddress address =
   column [ width fill, spacing 10, padding 5, alignTop ] [
-    row [] [ Input.text [] { label = Input.labelLeft [] (text "Prefix")
+    wrappedRow [] [ Input.text [] { label = Input.labelLeft [] (text "Prefix")
       , text = address.prefix
       , placeholder = Just (Input.placeholder []( text address.prefix ))
-      , onChange = SetEditingAddressValue address Prefix
+      , onChange = UpdatePrefix
       } 
-    ]
-    , row [] [ Input.text [] { label = Input.labelLeft [] (text "First Name")
+      , Input.text [] { label = Input.labelLeft [] (text "First Name")
       , text = address.firstName
       , placeholder = Just (Input.placeholder []( text address.firstName ))
-      , onChange = ( SetEditingAddressValue FirstName )
+      , onChange = UpdateFirstName
+      } 
+      , Input.text [] { label = Input.labelLeft [] (text "Middle Name")
+      , text = address.middleName
+      , placeholder = Just (Input.placeholder []( text address.middleName ))
+      , onChange = UpdateMiddleName
+      }
+      , Input.text [] { label = Input.labelLeft [] (text "Last Name")
+      , text = address.lastName
+      , placeholder = Just (Input.placeholder []( text address.lastName ))
+      , onChange = UpdateLastName
+      }
+      , Input.text [] { label = Input.labelLeft [] (text "Suffix")
+      , text = address.suffix
+      , placeholder = Just (Input.placeholder []( text address.suffix ))
+      , onChange = UpdateSuffix
       } 
     ]
-    , text ( composeName address )
-    , composeStreetBlock address.street
+    , composeStreetInputBlock address.street
     , row [] [ el [] (text address.city)
       , el [] (text address.region)
       , el [] (text address.postalCode)
@@ -312,6 +340,37 @@ composeName address =
   ++ address.suffix
 
 
-composeStreetBlock : List String -> Element msg
+composeStreetBlock : ( String, String, String ) -> Element msg
 composeStreetBlock streetAddresses =
-  column [] ( List.map (\x -> el [] (text x) ) streetAddresses )
+  let
+     ( a, b, c ) = streetAddresses
+  in
+
+  column [] [ el [] (text a) 
+    ,  el [] (text b)
+    ,  el [] (text c)
+    ]
+
+
+composeStreetInputBlock : ( String, String, String ) -> Element Msg
+composeStreetInputBlock streetAddresses =
+  let
+     ( a, b, c ) = streetAddresses
+  in
+  column [] [
+      Input.text [] { label = Input.labelHidden ""
+        , text = a
+        , placeholder = Just (Input.placeholder []( text a ))
+        , onChange = UpdateFirstStreet
+        } 
+      , Input.text [] { label = Input.labelHidden ""
+        , text = b
+        , placeholder = Just (Input.placeholder []( text b ))
+        , onChange = UpdateSecondStreet 
+        } 
+      , Input.text [] { label = Input.labelHidden ""
+        , text = c
+        , placeholder = Just (Input.placeholder []( text c ))
+        , onChange = UpdateThirdStreet 
+        } 
+    ]
