@@ -48,21 +48,21 @@ type UIStates = View
   | Edit Int
 
 
-type AddressField = MageId
-  | FirstName 
-  | LastName 
-  | MiddleName 
-  | Prefix 
-  | Suffix 
-  | Street 
-  | Company 
-  | Telephone 
-  | PostalCode 
-  | City 
-  | Region 
-  | Country 
-  | IsDefaultShipping 
-  | IsDefaultBilling 
+type AddressField = MageId Int
+  | FirstName String 
+  | LastName  String
+  | MiddleName  String
+  | Prefix String
+  | Suffix String
+  | Street ( List String )
+  | Company String
+  | Telephone String
+  | PostalCode String 
+  | City String
+  | Region String
+  | Country String
+  | IsDefaultShipping Bool 
+  | IsDefaultBilling Bool
   
   
 newAddress : Address
@@ -87,7 +87,7 @@ type Msg = Changed Value
   | EditAddress Int
   | CreateAddress
   | ViewAddresses
-  | SetEditingAddressValue Address AddressField String
+  | SetEditingAddressValue Address AddressField
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
@@ -113,103 +113,103 @@ update msg model =
     ViewAddresses ->
       ( { model | uiStatus = View }, Cmd.none )
 
-    SetEditingAddressValue address field value ->
+    SetEditingAddressValue address field ->
        case field of 
-         MageId ->
+         MageId _ ->
            ( model, Cmd.none )
 
-         FirstName ->
+         FirstName value ->
            let
              editAddress = { address | firstName = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         LastName ->
+         LastName value ->
            let
              editAddress = { address | lastName = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         MiddleName ->
+         MiddleName value ->
            let
              editAddress = { address | middleName = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Prefix ->
+         Prefix value ->
            let
              editAddress = { address | prefix = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Suffix ->
+         Suffix value ->
            let
              editAddress = { address | suffix = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Street ->
+         Street value ->
            let
              editAddress = { address | street = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Company ->
+         Company value ->
            let
              editAddress = { address | company = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Telephone ->
+         Telephone value ->
            let
              editAddress = { address | telephone = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         PostalCode ->
+         PostalCode value ->
            let
              editAddress = { address | postalCode = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         City ->
+         City value ->
            let
              editAddress = { address | city = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Region ->
+         Region value ->
            let
              editAddress = { address | region = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         Country ->
+         Country value ->
            let
              editAddress = { address | country = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         IsDefaultShipping ->
+         IsDefaultShipping value ->
            let
              editAddress = { address | isDefaultShipping = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
            in
              ( { model | addresses = updateAddresses }, Cmd.none )
 
-         IsDefaultBilling ->
+         IsDefaultBilling value ->
            let
              editAddress = { address | isDefaultBilling = value }
              updateAddresses = Dict.insert address.mageId editAddress model.addresses
@@ -285,7 +285,7 @@ viewEditAddress address =
     , row [] [ Input.text [] { label = Input.labelLeft [] (text "First Name")
       , text = address.firstName
       , placeholder = Just (Input.placeholder []( text address.firstName ))
-      , onChange = SetEditingAddressValue address FirstName
+      , onChange = ( SetEditingAddressValue FirstName )
       } 
     ]
     , text ( composeName address )
