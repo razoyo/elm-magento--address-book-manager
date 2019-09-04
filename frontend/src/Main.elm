@@ -291,40 +291,57 @@ viewAddress address =
 viewEditAddress : Address -> Element Msg
 viewEditAddress address =
   column [ width fill, spacing 10, padding 5, alignTop ] [
-    wrappedRow [] [ Input.text [] { label = Input.labelLeft [] (text "Prefix")
+    wrappedRow [ width fill, spacing 5 ] [ Input.text [ width (fillPortion 1) ] { label = Input.labelAbove [] (text "Prefix")
       , text = address.prefix
       , placeholder = Just (Input.placeholder []( text address.prefix ))
       , onChange = UpdatePrefix
       } 
-      , Input.text [] { label = Input.labelLeft [] (text "First Name")
+      , Input.text [ width (fillPortion 3) ] { label = Input.labelAbove [] (text "First Name")
       , text = address.firstName
       , placeholder = Just (Input.placeholder []( text address.firstName ))
       , onChange = UpdateFirstName
       } 
-      , Input.text [] { label = Input.labelLeft [] (text "Middle Name")
+      , Input.text [ width (fillPortion 3) ] { label = Input.labelAbove [] (text "Middle Name")
       , text = address.middleName
       , placeholder = Just (Input.placeholder []( text address.middleName ))
       , onChange = UpdateMiddleName
       }
-      , Input.text [] { label = Input.labelLeft [] (text "Last Name")
+      , Input.text [ width (fillPortion 3) ] { label = Input.labelAbove [] (text "Last Name")
       , text = address.lastName
       , placeholder = Just (Input.placeholder []( text address.lastName ))
       , onChange = UpdateLastName
       }
-      , Input.text [] { label = Input.labelLeft [] (text "Suffix")
+      , Input.text [ width (fillPortion 1) ] { label = Input.labelAbove [] (text "Suffix")
       , text = address.suffix
       , placeholder = Just (Input.placeholder []( text address.suffix ))
       , onChange = UpdateSuffix
       } 
     ]
     , composeStreetInputBlock address.street
-    , row [] [ el [] (text address.city)
-      , el [] (text address.region)
-      , el [] (text address.postalCode)
+    , row [ spacing 5, padding 5 ] [ Input.text [] { label = Input.labelAbove [] (text "City")
+      , text = address.city
+      , placeholder = Just (Input.placeholder []( text address.city ))
+      , onChange = UpdateCity
+      } 
+    , Input.text [] { label = Input.labelAbove [] (text "Region/State")
+      , text = address.region
+      , placeholder = Just (Input.placeholder []( text address.region ))
+      , onChange = UpdateRegion
+      } 
+    , Input.text [] { label = Input.labelAbove [] (text "PostalCode")
+      , text = address.postalCode
+      , placeholder = Just (Input.placeholder []( text address.region ))
+      , onChange = UpdateRegion
+      } 
     ]
-    , el [] (text address.country)
+    , row [width ( fill |> maximum 350 ), spacing 5] [ Input.text [] { label = Input.labelAbove [] (text "Country")
+      , text = address.country
+      , placeholder = Just (Input.placeholder []( text address.country ))
+      , onChange = UpdateCity
+      } 
     , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
     ]
+  ]
 
 
 composeName : Address -> String
@@ -357,18 +374,18 @@ composeStreetInputBlock streetAddresses =
   let
      ( a, b, c ) = streetAddresses
   in
-  column [] [
-      Input.text [] { label = Input.labelHidden ""
+  column [ width ( fill |> maximum 350 ), spacing 5 ] [
+      Input.text [ width fill ] { label = Input.labelAbove [] ( text "Street" )
         , text = a
         , placeholder = Just (Input.placeholder []( text a ))
         , onChange = UpdateFirstStreet
         } 
-      , Input.text [] { label = Input.labelHidden ""
+      , Input.text [ width fill ] { label = Input.labelHidden ""
         , text = b
         , placeholder = Just (Input.placeholder []( text b ))
         , onChange = UpdateSecondStreet 
         } 
-      , Input.text [] { label = Input.labelHidden ""
+      , Input.text [ width fill ] { label = Input.labelHidden ""
         , text = c
         , placeholder = Just (Input.placeholder []( text c ))
         , onChange = UpdateThirdStreet 
