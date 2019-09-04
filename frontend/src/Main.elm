@@ -46,7 +46,7 @@ type alias Model = {
 
 type UIStates = View 
   | AddNew 
-  | Edit Int
+  | Edit
   
   
 newAddress : Address
@@ -71,6 +71,7 @@ type Msg = Changed Value
   | EditAddress Int
   | CreateAddress
   | ViewAddresses
+  | SaveAddressUpdate Int
   | UpdateFirstName String 
   | UpdateLastName String 
   | UpdateMiddleName String
@@ -100,21 +101,28 @@ update msg model =
   -- what to do with Update Msgs
     
     EditAddress addressId ->
-      ( { model | uiStatus = Edit addressId
+      ( { model | uiStatus = Edit
         , editingAddress = Dict.get addressId model.addresses |> \x -> Maybe.withDefault newAddress x  
         }, Cmd.none )
 
     RemoveAddress addressId ->
-      ( { model | 
-          addresses = Dict.remove addressId model.addresses
+      ( { model | addresses = Dict.remove addressId model.addresses
         }
       , Cmd.none ) -- add Cmd to remove address from Magento
 
     CreateAddress ->
-      ( { model | uiStatus = AddNew }, Cmd.none )
+      ( { model | uiStatus = AddNew
+        , editingAddress = newAddress }, Cmd.none )
 
     ViewAddresses ->
       ( { model | uiStatus = View }, Cmd.none )
+
+    SaveAddressUpdate addressId ->
+      let
+        updatedAddresses = Dict.insert addressId model.editingAddress model.addresses
+      in
+      ( { model | addresses = updatedAddresses
+        , uiStatus = View }, Cmd.none ) -- add Cmd to update address in Magento
 
     UpdateFirstName newFirst ->
       let
@@ -247,10 +255,10 @@ view model =
 
         AddNew ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
-            , wrappedRow [] [ el [] (text "Add New Address") ]
+            , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model.editingAddress ]
             ]
 
-        Edit addressId ->
+        Edit ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
             , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model.editingAddress ]
           ]
@@ -318,28 +326,32 @@ viewEditAddress address =
       } 
     ]
     , composeStreetInputBlock address.street
-    , row [ spacing 5, padding 5 ] [ Input.text [] { label = Input.labelAbove [] (text "City")
+    , row [ spacing 5, padding 5 ] [ Input.text [ htmlAttribute (Html.Attributes.id "city") ] { label = Input.labelAbove [] (text "City")
       , text = address.city
       , placeholder = Just (Input.placeholder []( text address.city ))
       , onChange = UpdateCity
       } 
-    , Input.text [] { label = Input.labelAbove [] (text "Region/State")
+    , Input.text [ htmlAttribute (Html.Attributes.id "region") ] { label = Input.labelAbove [] (text "Region/State")
       , text = address.region
       , placeholder = Just (Input.placeholder []( text address.region ))
       , onChange = UpdateRegion
       } 
-    , Input.text [] { label = Input.labelAbove [] (text "PostalCode")
+    , Input.text [ htmlAttribute (Html.Attributes.id "post_code") ] { label = Input.labelAbove [] (text "PostalCode")
       , text = address.postalCode
-      , placeholder = Just (Input.placeholder []( text address.region ))
-      , onChange = UpdateRegion
+      , placeholder = Just (Input.placeholder []( text address.postalCode ))
+      , onChange = UpdatePostalCode
       } 
     ]
     , row [width ( fill |> maximum 350 ), spacing 5] [ Input.text [] { label = Input.labelAbove [] (text "Country")
       , text = address.country
-      , placeholder = Just (Input.placeholder []( text address.country ))
-      , onChange = UpdateCity
-      } 
-    , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
+      , placeholder = Just (Input.placeholder [ htmlAttribute (Html.Attributes.id "country") ] ( text address.country ))
+      , onChange = UpdateCountry
+      }
+    ]
+    , row [ spacing 25, padding 5 ] [ Input.button [] { onPress = Just ( SaveAddressUpdate address.mageId )
+      , label = text "Save Changes"
+      }
+      , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
     ]
   ]
 
@@ -375,17 +387,17 @@ composeStreetInputBlock streetAddresses =
      ( a, b, c ) = streetAddresses
   in
   column [ width ( fill |> maximum 350 ), spacing 5 ] [
-      Input.text [ width fill ] { label = Input.labelAbove [] ( text "Street" )
+      Input.text [ width fill, htmlAttribute (Html.Attributes.id "street_1") ] { label = Input.labelAbove [] ( text "Street" )
         , text = a
         , placeholder = Just (Input.placeholder []( text a ))
         , onChange = UpdateFirstStreet
         } 
-      , Input.text [ width fill ] { label = Input.labelHidden ""
+      , Input.text [ width fill, htmlAttribute (Html.Attributes.id "street_2") ] { label = Input.labelHidden ""
         , text = b
         , placeholder = Just (Input.placeholder []( text b ))
         , onChange = UpdateSecondStreet 
         } 
-      , Input.text [ width fill ] { label = Input.labelHidden ""
+      , Input.text [ width fill, htmlAttribute (Html.Attributes.id "street_3") ] { label = Input.labelHidden ""
         , text = c
         , placeholder = Just (Input.placeholder []( text c ))
         , onChange = UpdateThirdStreet 
