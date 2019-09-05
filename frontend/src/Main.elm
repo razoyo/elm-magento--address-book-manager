@@ -119,7 +119,13 @@ update msg model =
 
     SaveAddressUpdate addressId ->
       let
-        updatedAddresses = Dict.insert addressId model.editingAddress model.addresses
+        defSS = model.editingAddress.isDefaultShipping
+        newDSS = ( Dict.get addressId addresses |> Maybe.withDefault newAddress ).isDefaultShipping
+        defBS = model.editingAddress.isDefaultBilling
+        newDBS = ( Dict.get addressId addresses |> Maybe.withDefault newAddress ).isDefaultBilling
+
+        updateAddresses = model.addresses editingAddress ( defSS, newDSS, defSS, newDBS ) 
+
       in
       ( { model | addresses = updatedAddresses
         , uiStatus = View }, Cmd.none ) -- add Cmd to update address in Magento
@@ -230,7 +236,8 @@ update msg model =
         updateAddress = model.editingAddress 
         resultAddress = { updateAddress | isDefaultShipping = newDefaultShipping }
       in
-        ( { model | editingAddress = resultAddress }, Cmd.none )
+
+      ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateIsDefaultBilling newDefaultBilling ->
       let
@@ -239,6 +246,18 @@ update msg model =
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
+
+ensureUniqueDefaults : Address -> List Addresses -> ( Bool, Bool, Bool, Bool ) -> List Addresses
+ensureUniqueDefaults editingAddress addresses defaults  =
+  let
+    ( defSS, newDSS, defBS, newDBS ) = defaults       
+
+    if defSS == newDSS then
+       updatedAddresses = Dict.values addressId editingAddress addresses
+  in
+     --- working here
+
+updatedAddresses = Dict.insert addressId model.editingAddress model.addresses
 
 
 -- VIEW
