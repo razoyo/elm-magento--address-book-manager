@@ -348,6 +348,17 @@ viewEditAddress address =
       , onChange = UpdateCountry
       }
     ]
+    , row [ spacing 10 ] [ Input.checkbox [] { label = Input.labelRight [ padding 10 ] (text "Default Shipping")
+      , onChange = UpdateIsDefaultShipping
+      , icon = Input.defaultCheckbox
+      , checked = address.isDefaultShipping
+      }
+      , Input.checkbox [] { label = Input.labelRight [ padding 10 ] (text "Default Billing")
+        , onChange = UpdateIsDefaultBilling
+        , icon = Input.defaultCheckbox
+        , checked = address.isDefaultBilling
+      }
+    ]
     , row [ spacing 25, padding 5 ] [ Input.button [] { onPress = Just ( SaveAddressUpdate address.mageId )
       , label = text "Save Changes"
       }
