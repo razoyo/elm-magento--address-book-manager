@@ -119,12 +119,8 @@ update msg model =
 
     SaveAddressUpdate addressId ->
       let
-        defSS = model.editingAddress.isDefaultShipping
-        newDSS = ( Dict.get addressId addresses |> Maybe.withDefault newAddress ).isDefaultShipping
-        defBS = model.editingAddress.isDefaultBilling
-        newDBS = ( Dict.get addressId addresses |> Maybe.withDefault newAddress ).isDefaultBilling
-
-        updateAddresses = model.addresses editingAddress ( defSS, newDSS, defSS, newDBS ) 
+        checkedAddresses = ensureUniqueDefaults model.editingAddress model.addresses
+        updatedAddresses = Dict.insert addressId model.editingAddress checkedAddresses
 
       in
       ( { model | addresses = updatedAddresses
@@ -247,17 +243,22 @@ update msg model =
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
 
-ensureUniqueDefaults : Address -> List Addresses -> ( Bool, Bool, Bool, Bool ) -> List Addresses
-ensureUniqueDefaults editingAddress addresses defaults  =
-  let
-    ( defSS, newDSS, defBS, newDBS ) = defaults       
 
-    if defSS == newDSS then
-       updatedAddresses = Dict.values addressId editingAddress addresses
-  in
-     --- working here
+ensureUniqueDefaults : Address -> Addresses  -> Addresses
+ensureUniqueDefaults editingAddress addresses =
+  addresses 
+    |> (\a -> if editingAddress.isDefaultBilling then clearBilling a else a)
+    |> (\a -> if editingAddress.isDefaultShipping then clearShipping a else a)
 
-updatedAddresses = Dict.insert addressId model.editingAddress model.addresses
+clearBilling : Addresses -> Addresses
+clearBilling addresses =
+  Dict.map (\_ v -> { v | isDefaultBilling = False }) addresses
+
+clearShipping : Addresses -> Addresses
+clearShipping addresses =
+  Dict.map (\_ v -> { v | isDefaultShipping = False }) addresses
+  
+
 
 
 -- VIEW
