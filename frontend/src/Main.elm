@@ -12,6 +12,7 @@ import Array
 import Dict
 import Html exposing (Html)
 import Html.Attributes
+import Http
 import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
 import Json.Encode exposing (Value)
 
@@ -60,8 +61,7 @@ init _ =
     , addresses = addresses
     , editingAddress = newAddress
     } 
-   , Cmd.none -- this will be the command to return the addresses from Magento in production
-   )
+  ,   )
   -- return model and inital command
 
 -- UPDATE
@@ -243,21 +243,21 @@ update msg model =
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
 
-
 ensureUniqueDefaults : Address -> Addresses  -> Addresses
 ensureUniqueDefaults editingAddress addresses =
   addresses 
     |> (\a -> if editingAddress.isDefaultBilling then clearBilling a else a)
     |> (\a -> if editingAddress.isDefaultShipping then clearShipping a else a)
 
+
 clearBilling : Addresses -> Addresses
 clearBilling addresses =
   Dict.map (\_ v -> { v | isDefaultBilling = False }) addresses
 
+
 clearShipping : Addresses -> Addresses
 clearShipping addresses =
-  Dict.map (\_ v -> { v | isDefaultShipping = False }) addresses
-  
+  Dict.map (\_ v -> { v | isDefaultShipping = False }) addresses  
 
 
 
@@ -434,3 +434,18 @@ composeStreetInputBlock streetAddresses =
         , onChange = UpdateThirdStreet 
         } 
     ]
+
+
+
+--- HTTP
+
+getAddresses : Cmd Msg
+getAddresses =
+  Http.get
+      { url = "/razoyo/customer/addresses"
+      , expect = Http.expectJson LoadAddresses addressListDecoder 
+      }
+
+addressListDecoder : Decoder String
+addressListDecoder =
+  
