@@ -59,7 +59,9 @@ newAddress =
 init : String -> ( Model, Cmd Msg )
 init _ =
   ( { uiStatus = View
-    , addresses = getAddresses -- TODO this is just for debugging the decoder, will go back to a default after adding the command to load at the end of this function
+    -- TODO this is just for debugging the decoder, will go back 
+    -- to a default after adding the command to load at the end of this function
+    , addresses = getAddresses 
     , editingAddress = newAddress
     } 
   , Cmd.none )
@@ -406,26 +408,27 @@ getAddresses =
   let 
     -- USE THIS WHEN HTTP IS READY: result = Decode.decodeValue addressListDecoder Stub.httpResult
     result = Ok Stub.httpResult -- trade this out when above is done 
-    addresses =
-      let
-        addressDict = Dict.insert -1 newAddress Dict.empty
-        bug = Debug.log "line 412" result
-      in
-
-      case result of
-        Err _ ->
-          addressDict
-          
-        Ok jsonAddresses ->
-          Decode.decodeValue (Decode.list addressDecoder) jsonAddresses
-            |> resultToAddressList 
-            |> List.map ( \x -> ( x.mageId, x ) )
-            |> Dict.fromList
+    emptyDict = Dict.insert -1 newAddress Dict.empty
   in
+    case result of
+      Ok jsonAddresses ->
+        case Decode.decodeString (Decode.list addressDecoder) jsonAddresses of
+          Ok v ->
+            let
+              _ = Debug.log "decoded!" v
+            in
+              List.map ( \x -> ( x.mageId, x ) ) v |> Dict.fromList
+          Err e ->
+            let
+              _ = Debug.log "not decoded!" e
+            in
+              emptyDict
 
-  addresses
+      Err _ -> 
+        emptyDict
 
 
+{-
 resultToAddressList : ( Result Decode.Error (List Address) ) -> List Address
 resultToAddressList result =
   let
@@ -437,12 +440,13 @@ resultToAddressList result =
 
     Ok addressList ->
       addressList
+-}
 
 
 addressDecoder : Decoder Address
 addressDecoder =
   Decode.succeed Address
-    |> required "mageId" int
+    |> required "id" int
     |> required "first_name" string 
     |> required "last_name" string 
     |> required "middle_name" string
@@ -451,9 +455,9 @@ addressDecoder =
     |> required "street" (Decode.list string)
     |> required "company" string
     |> required "telephone" string
-    |> required "postal_code" string
+    |> required "postcode" string
     |> required "city" string
     |> required "region" string
-    |> required "country" string
-    |> required "isDefaultShipping" bool
-    |> required "isDefaultBilling" bool
+    |> required "country_id" string
+    |> required "is_default_shipping" bool
+    |> required "is_default_billing" bool
