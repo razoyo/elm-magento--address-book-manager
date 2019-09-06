@@ -7,15 +7,15 @@ type alias Addresses
   = Dict.Dict Int Address
 
 type alias Address = { mageId: Int
-  , firstName: String
-  , lastName: String
-  , middleName: String
+  , first_name: String
+  , last_name: String
+  , middle_name: String
   , prefix: String
   , suffix: String
   , street: ( String, String, String )
   , company: String
   , telephone: String
-  , postalCode: String
+  , postal_code: String
   , city: String
   , region: String
   , country: String 
