@@ -13,8 +13,9 @@ import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Http
-import Json.Decode as Decode exposing (Decoder, field, string, int, map, value)
+import Json.Decode as Decode exposing (Decoder, field, string, int, bool, value)
 import Json.Encode exposing (Value)
+import Json.Decode.Pipeline exposing (required, optional, hardcoded)
 
 -- Local app imports
 import Stub exposing (..)
@@ -61,12 +62,13 @@ init _ =
     , addresses = addresses
     , editingAddress = newAddress
     } 
-  ,   )
+  , Cmd.none )
   -- return model and inital command
 
 -- UPDATE
 
 type Msg = Changed Value
+  | LoadAddresses ( Addresses )
   | RemoveAddress Int
   | EditAddress Int
   | CreateAddress
@@ -99,6 +101,9 @@ update msg model =
     Changed message ->
       ( model, Cmd.none )
   -- what to do with Update Msgs
+
+    LoadAddresses result ->
+          ( { model | addresses = addresses }, Cmd.none )
     
     EditAddress addressId ->
       ( { model | uiStatus = Edit
@@ -439,13 +444,61 @@ composeStreetInputBlock streetAddresses =
 
 --- HTTP
 
-getAddresses : Cmd Msg
+getAddresses : Msg
 getAddresses =
-  Http.get
-      { url = "/razoyo/customer/addresses"
-      , expect = Http.expectJson LoadAddresses addressListDecoder 
-      }
+  let 
+    -- USE THIS WHEN HTTP IS READY: result = Decode.decodeValue addressListDecoder Stub.httpResult
+    result = Ok Stub.httpResult -- trade this out when above is done 
+    addresses =
+      case result of
+        Err _ ->
+          Dict.insert -1 newAddress
 
-addressListDecoder : Decoder String
-addressListDecoder =
-  
+        Ok addressValue ->
+          Decode.decodeValue jsArrayDecoder addressValue
+            |> (\x -> getListFromDecode x)
+  in
+
+  LoadAddresses addresses
+
+
+--- Step 1 - convert json array to a list of values
+--- Step 2 - convert list of values to list of Address
+--- Step 2.5 - map keys to Elm names
+--- Step 3 - convert list of Address to Dict with Address.mageId as the key
+
+
+jsArrayDecoder : Decoder ( List Value )
+jsArrayDecoder =
+  Decode.list value
+
+
+addressDecoder : Decoder Address
+addressDecoder =
+      Decode.succeed Address
+        |> required "mageId" int
+        |> required "first_name" string 
+        |> required "last_name" string 
+        |> required "middle_name" string
+        |> required "prefix" string
+        |> required "suffix" string
+        |> required "street" ( string, string, string )
+        |> required "company" string
+        |> required "telephone" string
+        |> required "postal_code" string
+        |> required "city" string
+        |> required "region" string
+        |> required "country" string
+        |> required "isDefaultShipping" bool
+        |> required "isDefaultBilling" bool
+
+
+getListFromDecode : (Result Decode.Error (List Value)) -> ( List Address )
+getListFromDecode result =
+  case result of
+    Err _ ->
+      [ newAddress ]
+
+    Ok valueList ->
+      Decode.decodeString addressDecoder valueList
+
