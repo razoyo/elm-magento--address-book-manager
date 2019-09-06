@@ -14,7 +14,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder, field, string, int, bool, value)
-import Json.Encode exposing (Value)
+import Json.Encode as Encode exposing (Value)
 import Json.Decode.Pipeline exposing (required, optional, hardcoded)
 
 -- Local app imports
@@ -53,13 +53,13 @@ type UIStates = View
   
 newAddress : Address
 newAddress = 
-  Address -1 "" "" "" "" "" ("","","") "" "" "" "" "" "" False False
+  Address -1 "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
 
 -- 
 init : String -> ( Model, Cmd Msg )
 init _ =
   ( { uiStatus = View
-    , addresses = addresses
+    , addresses = getAddresses -- TODO this is just for debugging the decoder, will go back to a default after adding the command to load at the end of this function
     , editingAddress = newAddress
     } 
   , Cmd.none )
@@ -68,7 +68,6 @@ init _ =
 -- UPDATE
 
 type Msg = Changed Value
-  | LoadAddresses ( Addresses )
   | RemoveAddress Int
   | EditAddress Int
   | CreateAddress
@@ -79,9 +78,7 @@ type Msg = Changed Value
   | UpdateMiddleName String
   | UpdatePrefix String
   | UpdateSuffix String
-  | UpdateFirstStreet String
-  | UpdateSecondStreet String
-  | UpdateThirdStreet String
+  | UpdateStreet Int String
   | UpdateCompany String
   | UpdateTelephone String
   | UpdatePostalCode String
@@ -102,9 +99,6 @@ update msg model =
       ( model, Cmd.none )
   -- what to do with Update Msgs
 
-    LoadAddresses result ->
-          ( { model | addresses = addresses }, Cmd.none )
-    
     EditAddress addressId ->
       ( { model | uiStatus = Edit
         , editingAddress = Dict.get addressId model.addresses |> \x -> Maybe.withDefault newAddress x  
@@ -166,27 +160,11 @@ update msg model =
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
-    UpdateFirstStreet newStreet ->
+    UpdateStreet index newStreet ->
       let
+        streets = List.indexedMap (\x y -> if x == index then newStreet else y) model.editingAddress.street
         updateAddress = model.editingAddress
-        ( a, b, c ) = updateAddress.street
-        resultAddress = { updateAddress | street = ( newStreet, b, c ) }
-      in
-        ( { model | editingAddress = resultAddress }, Cmd.none )
-
-    UpdateSecondStreet newStreet ->
-      let
-        updateAddress = model.editingAddress
-        ( a, b, c ) = updateAddress.street
-        resultAddress = { updateAddress | street = ( a, newStreet, c ) }
-      in
-        ( { model | editingAddress = resultAddress }, Cmd.none )
-
-    UpdateThirdStreet newStreet ->
-      let
-        updateAddress = model.editingAddress
-        ( a, b, c ) = updateAddress.street
-        resultAddress = { updateAddress | street = ( a, b, newStreet ) }
+        resultAddress = { updateAddress | street = streets }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
@@ -308,7 +286,7 @@ viewAddress : Address -> Element Msg
 viewAddress address =
   column [ width fill, spacing 10, padding 5, alignTop ] [
      text ( composeName address )
-     , composeStreetBlock address.street
+     , column [] (List.map (\x -> el [] (text x)) address.street)
      , row [] [ el [] (text address.city)
        , el [] (text address.region)
        , el [] (text address.postalCode)
@@ -405,100 +383,77 @@ composeName address =
   ++ address.suffix
 
 
-composeStreetBlock : ( String, String, String ) -> Element msg
-composeStreetBlock streetAddresses =
-  let
-     ( a, b, c ) = streetAddresses
-  in
-
-  column [] [ el [] (text a) 
-    ,  el [] (text b)
-    ,  el [] (text c)
-    ]
-
-
-composeStreetInputBlock : ( String, String, String ) -> Element Msg
+composeStreetInputBlock : List String -> Element Msg
 composeStreetInputBlock streetAddresses =
-  let
-     ( a, b, c ) = streetAddresses
-  in
-  column [ width ( fill |> maximum 350 ), spacing 5 ] [
-      Input.text [ width fill, htmlAttribute (Html.Attributes.id "street_1") ] { label = Input.labelAbove [] ( text "Street" )
-        , text = a
-        , placeholder = Just (Input.placeholder []( text a ))
-        , onChange = UpdateFirstStreet
-        } 
-      , Input.text [ width fill, htmlAttribute (Html.Attributes.id "street_2") ] { label = Input.labelHidden ""
-        , text = b
-        , placeholder = Just (Input.placeholder []( text b ))
-        , onChange = UpdateSecondStreet 
-        } 
-      , Input.text [ width fill, htmlAttribute (Html.Attributes.id "street_3") ] { label = Input.labelHidden ""
-        , text = c
-        , placeholder = Just (Input.placeholder []( text c ))
-        , onChange = UpdateThirdStreet 
-        } 
-    ]
+  column [ width ( fill |> maximum 350 ), spacing 5 ] (
+      List.indexedMap (\x y -> ( 
+        Input.text [ width fill
+          , htmlAttribute (Html.Attributes.id ("street_" ++ ( String.fromInt x )) )
+          ] { label = (if x == 1 then Input.labelAbove [] ( text "Street" ) else Input.labelHidden "")
+            , text = y
+            , placeholder = Just (Input.placeholder []( text y ))
+            , onChange = UpdateStreet x
+            }
+        ) ) streetAddresses 
+    )
 
 
 
 --- HTTP
 
-getAddresses : Msg
+getAddresses : Addresses
 getAddresses =
   let 
     -- USE THIS WHEN HTTP IS READY: result = Decode.decodeValue addressListDecoder Stub.httpResult
     result = Ok Stub.httpResult -- trade this out when above is done 
     addresses =
+      let
+        addressDict = Dict.insert -1 newAddress Dict.empty
+        bug = Debug.log "line 412" result
+      in
+
       case result of
         Err _ ->
-          Dict.insert -1 newAddress
-
-        Ok addressValue ->
-          Decode.decodeValue jsArrayDecoder addressValue
-            |> (\x -> getListFromDecode x)
+          addressDict
+          
+        Ok jsonAddresses ->
+          Decode.decodeValue (Decode.list addressDecoder) jsonAddresses
+            |> resultToAddressList 
+            |> List.map ( \x -> ( x.mageId, x ) )
+            |> Dict.fromList
   in
 
-  LoadAddresses addresses
+  addresses
 
 
---- Step 1 - convert json array to a list of values
---- Step 2 - convert list of values to list of Address
---- Step 2.5 - map keys to Elm names
---- Step 3 - convert list of Address to Dict with Address.mageId as the key
+resultToAddressList : ( Result Decode.Error (List Address) ) -> List Address
+resultToAddressList result =
+  let
+    x = Debug.log "line 432" result
+  in
+  case result of
+    Err error ->
+      [ newAddress ]
 
-
-jsArrayDecoder : Decoder ( List Value )
-jsArrayDecoder =
-  Decode.list value
+    Ok addressList ->
+      addressList
 
 
 addressDecoder : Decoder Address
 addressDecoder =
-      Decode.succeed Address
-        |> required "mageId" int
-        |> required "first_name" string 
-        |> required "last_name" string 
-        |> required "middle_name" string
-        |> required "prefix" string
-        |> required "suffix" string
-        |> required "street" ( string, string, string )
-        |> required "company" string
-        |> required "telephone" string
-        |> required "postal_code" string
-        |> required "city" string
-        |> required "region" string
-        |> required "country" string
-        |> required "isDefaultShipping" bool
-        |> required "isDefaultBilling" bool
-
-
-getListFromDecode : (Result Decode.Error (List Value)) -> ( List Address )
-getListFromDecode result =
-  case result of
-    Err _ ->
-      [ newAddress ]
-
-    Ok valueList ->
-      Decode.decodeString addressDecoder valueList
-
+  Decode.succeed Address
+    |> required "mageId" int
+    |> required "first_name" string 
+    |> required "last_name" string 
+    |> required "middle_name" string
+    |> required "prefix" string
+    |> required "suffix" string
+    |> required "street" (Decode.list string)
+    |> required "company" string
+    |> required "telephone" string
+    |> required "postal_code" string
+    |> required "city" string
+    |> required "region" string
+    |> required "country" string
+    |> required "isDefaultShipping" bool
+    |> required "isDefaultBilling" bool
