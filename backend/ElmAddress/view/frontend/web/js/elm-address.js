@@ -4641,7 +4641,6 @@ var author$project$Main$newAddress = author$project$Stub$Address('-1')('')('')('
 var author$project$Main$LoadAddresses = function (a) {
 	return {$: 'LoadAddresses', a: a};
 };
-var elm$core$Maybe$Nothing = {$: 'Nothing'};
 var elm$core$Result$Ok = function (a) {
 	return {$: 'Ok', a: a};
 };
@@ -4659,6 +4658,7 @@ var elm$core$Basics$compare = _Utils_compare;
 var elm$core$Maybe$Just = function (a) {
 	return {$: 'Just', a: a};
 };
+var elm$core$Maybe$Nothing = {$: 'Nothing'};
 var elm$core$Dict$get = F2(
 	function (targetKey, dict) {
 		get:
@@ -5656,11 +5656,7 @@ var elm$http$Http$expectString = function (toMsg) {
 		toMsg,
 		elm$http$Http$resolve(elm$core$Result$Ok));
 };
-var elm$http$Http$Header = F2(
-	function (a, b) {
-		return {$: 'Header', a: a, b: b};
-	});
-var elm$http$Http$header = elm$http$Http$Header;
+var elm$http$Http$emptyBody = _Http_emptyBody;
 var elm$http$Http$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -5908,23 +5904,18 @@ var elm$http$Http$request = function (r) {
 		elm$http$Http$Request(
 			{allowCookiesFromOtherDomains: false, body: r.body, expect: r.expect, headers: r.headers, method: r.method, timeout: r.timeout, tracker: r.tracker, url: r.url}));
 };
-var elm$http$Http$stringBody = _Http_pair;
-var author$project$Main$requestAddressesFromMagento = elm$http$Http$request(
+var elm$http$Http$get = function (r) {
+	return elm$http$Http$request(
+		{body: elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
+};
+var author$project$Main$requestAddressesFromMagento = elm$http$Http$get(
 	{
-		body: A2(elm$http$Http$stringBody, 'application/json', '{PHPSESSID:luvnv186if2glvre97t7tvh1qm,form_key:QyQhla3n2g5rIwnE}'),
 		expect: elm$http$Http$expectString(author$project$Main$LoadAddresses),
-		headers: _List_fromArray(
-			[
-				A2(elm$http$Http$header, 'X-Requested-With', 'XMLHttpRequest')
-			]),
-		method: 'GET',
-		timeout: elm$core$Maybe$Nothing,
-		tracker: elm$core$Maybe$Nothing,
-		url: 'https://paul.razoyo.com//razoyo/customer/addresses'
+		url: '/razoyo/customer/addresses'
 	});
-var author$project$Main$init = function (_n0) {
+var author$project$Main$init = function (cookie) {
 	return _Utils_Tuple2(
-		{addresses: elm$core$Dict$empty, editingAddress: author$project$Main$newAddress, uiStatus: author$project$Main$View},
+		{addresses: elm$core$Dict$empty, cookie: cookie, editingAddress: author$project$Main$newAddress, uiStatus: author$project$Main$View},
 		author$project$Main$requestAddressesFromMagento);
 };
 var elm$core$Platform$Sub$batch = _Platform_batch;

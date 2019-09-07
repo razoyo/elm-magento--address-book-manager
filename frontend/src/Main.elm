@@ -43,6 +43,7 @@ type alias Model = {
     uiStatus : UIStates
     , addresses : Addresses
     , editingAddress : Address
+    , cookie : String
   }
 
 
@@ -57,26 +58,24 @@ newAddress =
 
 -- 
 init : String -> ( Model, Cmd Msg )
-init _ =
+init cookie =
   ( { uiStatus = View
-    -- TODO this is just for debugging the decoder, will go back 
-    -- to a default after adding the command to load at the end of this function
     , addresses = Dict.empty 
     , editingAddress = newAddress
+    , cookie = cookie
     } 
-  , requestAddressesFromMagento )
-  -- return model and inital command
+  , Http.get { url = "/razoyo/customer/addresses"
+    , expect =  Http.expectString LoadAddresses
+    } )
+
 
 requestAddressesFromMagento : Cmd Msg
 requestAddressesFromMagento =
-  Http.request { method = "GET"
-  , headers  = [Http.header "X-Requested-With" "XMLHttpRequest"]
-  , url = "https://paul.razoyo.com//razoyo/customer/addresses"
-  , expect = Http.expectString LoadAddresses
-  , body = Http.stringBody "application/json" "{PHPSESSID:luvnv186if2glvre97t7tvh1qm,form_key:QyQhla3n2g5rIwnE}"
-  , timeout = Nothing
-  , tracker = Nothing
-  }
+  Http.get { url = "/razoyo/customer/addresses"
+    , expect =  Http.expectString LoadAddresses
+    }
+
+
 
 -- UPDATE
 
@@ -138,10 +137,15 @@ update msg model =
       let
         checkedAddresses = ensureUniqueDefaults model.editingAddress model.addresses
         updatedAddresses = Dict.insert addressId model.editingAddress checkedAddresses
-
       in
       ( { model | addresses = updatedAddresses
-        , uiStatus = View }, Cmd.none ) -- add Cmd to update address in Magento
+        , uiStatus = View },
+        Http.post {
+          url = "/customer/address/formPost/"
+          , body = Http.jsonBody ( addressEncode model.editingAddress ) 
+          , expect = Http.expectWhatever ViewAddresses
+        } 
+      )
 
     UpdateFirstName newFirst ->
       let
@@ -428,9 +432,6 @@ getAddresses result =
       Ok jsonAddresses ->
         case Decode.decodeString (Decode.list addressDecoder) jsonAddresses of
           Ok v ->
-            let
-              _ = Debug.log "decoded!" v
-            in
               List.map ( \x -> ( x.mageId, normalizeStreetBlock x ) ) v |> Dict.fromList
           Err e ->
             let
@@ -445,6 +446,7 @@ getAddresses result =
 normalizeStreetBlock : Address -> Address
 normalizeStreetBlock address =
       { address | street =  (address.street ++ List.repeat (3 - (List.length address.street)) "") }
+
 
 addressDecoder : Decoder Address
 addressDecoder =
@@ -464,3 +466,23 @@ addressDecoder =
     |> required "country_id" string
     |> required "is_default_shipping" (oneOf [ bool, null False ])
     |> required "is_default_billing" (oneOf [ bool, null False ])
+
+
+addressEncode : Address -> Value
+addressEncode address =
+  Encode.object [ 
+    ( "first_name",  Encode.string address.firstName ) 
+    , ( "last_name", Encode.string address.lastName ) 
+    , ( "middle_name", Encode.string address.middleName )
+    , ( "prefix", Encode.string address.prefix )
+    , ( "suffix", Encode.string address.suffix )
+    , ( "street", Encode.string (Encode.encode 0 (Encode.list Encode.string address.street) ))
+    , ( "company", Encode.string address.company)
+    , ( "telephone", Encode.string address.telephone )
+    , ( "postcode", Encode.string address.postalCode )
+    , ( "city", Encode.string address.city )
+    , ( "region", Encode.string address.region )
+    , ( "country_id", Encode.string address.country )
+    , ( "is_default_shipping", Encode.bool address.isDefaultShipping )
+    , ( "is_default_billing", Encode.bool address.isDefaultBilling )
+  ]

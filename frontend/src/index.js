@@ -5,7 +5,7 @@ const app = require('./Main.elm')
   .Main
   .init({ 
     node: document.querySelector("addr-mgr"),
-    flags: ""
+    flags: document.cookie
   });
 
 function sendToElm(messageData) { 
