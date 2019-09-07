@@ -41,7 +41,7 @@ subscriptions model =
 
 type alias Model = {
     uiStatus : UIStates
-    , addresses : Stub.Addresses
+    , addresses : Addresses
     , editingAddress : Address
   }
 
@@ -61,15 +61,27 @@ init _ =
   ( { uiStatus = View
     -- TODO this is just for debugging the decoder, will go back 
     -- to a default after adding the command to load at the end of this function
-    , addresses = getAddresses 
+    , addresses = Dict.empty 
     , editingAddress = newAddress
     } 
-  , Cmd.none )
+  , requestAddressesFromMagento )
   -- return model and inital command
+
+requestAddressesFromMagento : Cmd Msg
+requestAddressesFromMagento =
+  Http.request { method = "GET"
+  , headers  = [Http.header "X-Requested-With" "XMLHttpRequest"]
+  , url = "https://paul.razoyo.com//razoyo/customer/addresses"
+  , expect = Http.expectString LoadAddresses
+  , body = Http.stringBody "application/json" "{PHPSESSID:luvnv186if2glvre97t7tvh1qm,form_key:QyQhla3n2g5rIwnE}"
+  , timeout = Nothing
+  , tracker = Nothing
+  }
 
 -- UPDATE
 
 type Msg = Changed Value
+  | LoadAddresses (Result Http.Error String)
   | RemoveAddress String
   | EditAddress String
   | CreateAddress
@@ -101,6 +113,9 @@ update msg model =
     Changed message ->
       ( model, Cmd.none )
   -- what to do with Update Msgs
+
+    LoadAddresses result ->
+      ( { model | addresses = getAddresses result }, Cmd.none )
 
     EditAddress addressId ->
       ( { model | uiStatus = Edit
@@ -404,11 +419,9 @@ composeStreetInputBlock streetAddresses =
 
 --- HTTP
 
-getAddresses : Addresses
-getAddresses =
+getAddresses : (Result Http.Error String) -> Addresses
+getAddresses result =
   let 
-    -- USE THIS WHEN HTTP IS READY: result = Decode.decodeValue addressListDecoder Stub.httpResult
-    result = Ok Stub.httpResult -- trade this out when above is done 
     emptyDict = Dict.insert "-1" newAddress Dict.empty
   in
     case result of
