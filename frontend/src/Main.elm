@@ -13,7 +13,7 @@ import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Http
-import Json.Decode as Decode exposing (Decoder, field, string, int, bool, value)
+import Json.Decode as Decode exposing (Decoder, field, string, int, bool, value, null, oneOf)
 import Json.Encode as Encode exposing (Value)
 import Json.Decode.Pipeline exposing (required, optional, hardcoded)
 
@@ -53,7 +53,7 @@ type UIStates = View
   
 newAddress : Address
 newAddress = 
-  Address -1 "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
+  Address "-1" "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
 
 -- 
 init : String -> ( Model, Cmd Msg )
@@ -70,11 +70,11 @@ init _ =
 -- UPDATE
 
 type Msg = Changed Value
-  | RemoveAddress Int
-  | EditAddress Int
+  | RemoveAddress String
+  | EditAddress String
   | CreateAddress
   | ViewAddresses
-  | SaveAddressUpdate Int
+  | SaveAddressUpdate String
   | UpdateFirstName String 
   | UpdateLastName String 
   | UpdateMiddleName String
@@ -276,7 +276,7 @@ showAddresses addresses =
     |> \x -> List.map viewAddress x
 
 
-showAddress : Int -> Addresses -> Element Msg -- May not need this function in final version | only reason to show single address is to edit it
+showAddress : String -> Addresses -> Element Msg -- May not need this function in final version | only reason to show single address is to edit it
 showAddress addressId addresses =
   
   Dict.get addressId addresses
@@ -408,7 +408,7 @@ getAddresses =
   let 
     -- USE THIS WHEN HTTP IS READY: result = Decode.decodeValue addressListDecoder Stub.httpResult
     result = Ok Stub.httpResult -- trade this out when above is done 
-    emptyDict = Dict.insert -1 newAddress Dict.empty
+    emptyDict = Dict.insert "-1" newAddress Dict.empty
   in
     case result of
       Ok jsonAddresses ->
@@ -427,7 +427,6 @@ getAddresses =
       Err _ -> 
         emptyDict
 
-
 {-
 resultToAddressList : ( Result Decode.Error (List Address) ) -> List Address
 resultToAddressList result =
@@ -442,22 +441,21 @@ resultToAddressList result =
       addressList
 -}
 
-
 addressDecoder : Decoder Address
 addressDecoder =
   Decode.succeed Address
-    |> required "id" int
+    |> required "id" string
     |> required "first_name" string 
     |> required "last_name" string 
-    |> required "middle_name" string
-    |> required "prefix" string
-    |> required "suffix" string
+    |> optional "middle_name" (oneOf [ string, null "" ]) ""
+    |> optional "prefix" (oneOf [ string, null "" ]) ""
+    |> optional "suffix" (oneOf [ string, null "" ]) ""
     |> required "street" (Decode.list string)
-    |> required "company" string
-    |> required "telephone" string
+    |> optional "company" (oneOf [ string, null "" ]) ""
+    |> optional "telephone" (oneOf [ string, null "" ]) ""
     |> required "postcode" string
     |> required "city" string
     |> required "region" string
     |> required "country_id" string
-    |> required "is_default_shipping" bool
-    |> required "is_default_billing" bool
+    |> required "is_default_shipping" (oneOf [ bool, null False ])
+    |> required "is_default_billing" (oneOf [ bool, null False ])
