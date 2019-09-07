@@ -90,6 +90,7 @@ type Msg = Changed Value
   | UpdateIsDefaultShipping Bool 
   | UpdateIsDefaultBilling Bool
 
+
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
   let 
@@ -391,7 +392,7 @@ composeStreetInputBlock streetAddresses =
       List.indexedMap (\x y -> ( 
         Input.text [ width fill
           , htmlAttribute (Html.Attributes.id ("street_" ++ ( String.fromInt x )) )
-          ] { label = (if x == 1 then Input.labelAbove [] ( text "Street" ) else Input.labelHidden "")
+          ] { label = (if x == 0 then Input.labelAbove [] ( text "Street" ) else Input.labelHidden "")
             , text = y
             , placeholder = Just (Input.placeholder []( text y ))
             , onChange = UpdateStreet x
@@ -417,7 +418,7 @@ getAddresses =
             let
               _ = Debug.log "decoded!" v
             in
-              List.map ( \x -> ( x.mageId, x ) ) v |> Dict.fromList
+              List.map ( \x -> ( x.mageId, normalizeStreetBlock x ) ) v |> Dict.fromList
           Err e ->
             let
               _ = Debug.log "not decoded!" e
@@ -427,19 +428,10 @@ getAddresses =
       Err _ -> 
         emptyDict
 
-{-
-resultToAddressList : ( Result Decode.Error (List Address) ) -> List Address
-resultToAddressList result =
-  let
-    x = Debug.log "line 432" result
-  in
-  case result of
-    Err error ->
-      [ newAddress ]
 
-    Ok addressList ->
-      addressList
--}
+normalizeStreetBlock : Address -> Address
+normalizeStreetBlock address =
+      { address | street =  (address.street ++ List.repeat (3 - (List.length address.street)) "") }
 
 addressDecoder : Decoder Address
 addressDecoder =
