@@ -28,13 +28,13 @@ main =
     , view = view
     }
 
+
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
   -- fromJs Changed
   Sub.none
--- this gets us communication from the ports where we'll have to receive some of the key information like user/session, etc.
 
 
 -- MODEL
@@ -56,6 +56,7 @@ newAddress : Address
 newAddress = 
   Address "-1" "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
 
+
 -- 
 init : String -> ( Model, Cmd Msg )
 init cookie =
@@ -67,13 +68,6 @@ init cookie =
   , Http.get { url = "/razoyo/customer/addresses"
     , expect =  Http.expectString LoadAddresses
     } )
-
-
-requestAddressesFromMagento : Cmd Msg
-requestAddressesFromMagento =
-  Http.get { url = "/razoyo/customer/addresses"
-    , expect =  Http.expectString LoadAddresses
-    }
 
 
 
@@ -100,9 +94,10 @@ type Msg = Changed Value
   | UpdateCountry String
   | UpdateIsDefaultShipping Bool 
   | UpdateIsDefaultBilling Bool
+  | Posted (Result Http.Error String)
 
 
-update : Msg -> Model -> ( Model, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   let 
     editAddress = model.editingAddress
@@ -139,11 +134,11 @@ update msg model =
         updatedAddresses = Dict.insert addressId model.editingAddress checkedAddresses
       in
       ( { model | addresses = updatedAddresses
-        , uiStatus = View },
-        Http.post {
-          url = "/customer/address/formPost/"
-          , body = Http.jsonBody ( addressEncode model.editingAddress ) 
-          , expect = Http.expectWhatever ViewAddresses
+        , uiStatus = View }
+      , Http.post {
+        url = "/customer/address/formPost/"
+        , body = Http.jsonBody ( addressEncode model.editingAddress ) 
+        , expect = Http.expectString Posted
         } 
       )
 
@@ -246,6 +241,25 @@ update msg model =
         resultAddress = { updateAddress | isDefaultBilling = newDefaultBilling }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
+
+    Posted result ->
+      let
+        debug = 
+          case result of 
+            Err e ->
+              let
+                x = Debug.log "Post error" e
+              in
+                "Error"
+
+            Ok v ->
+              let
+                x = Debug.log "Post success" v
+              in
+                "OK"
+
+      in
+      ( model, Cmd.none )
 
 
 ensureUniqueDefaults : Address -> Addresses  -> Addresses
