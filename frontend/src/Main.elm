@@ -43,7 +43,7 @@ type alias Model = {
     uiStatus : UIStates
     , addresses : Addresses
     , editingAddress : Address
-    , cookie : ( String , String )
+    , cookie : { sessionId: String , formKey: String }
   }
 
 
@@ -60,12 +60,15 @@ newAddress =
 -- 
 init : String -> ( Model, Cmd Msg )
 init cookie =
+  let
+    debug = Debug.log "parsed cookie" ( cookieParse cookie )
+  in
   ( { uiStatus = View
     , addresses = Dict.empty 
     , editingAddress = newAddress
     , cookie = cookieParse cookie
     } 
-  , Http.get { url = "https://paul.razoyo.com/razoyo/customer/addresses"
+  , Http.get { url = "/razoyo/customer/addresses/"
     , expect =  Http.expectString LoadAddresses
     } )
 
@@ -94,7 +97,7 @@ type Msg = Changed Value
   | UpdateCountry String
   | UpdateIsDefaultShipping Bool 
   | UpdateIsDefaultBilling Bool
-  | Posted (Result Http.Error String)
+  | Posted (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -119,7 +122,12 @@ update msg model =
     RemoveAddress addressId ->
       ( { model | addresses = Dict.remove addressId model.addresses
         }
-      , Cmd.none ) -- add Cmd to remove address from Magento
+      , Http.post {
+        url = "/customer/address/delete/id/" ++ addressId ++ "/form_key/" ++ model.cookie.formKey
+        , body = Http.emptyBody 
+        , expect = Http.expectWhatever Posted
+        } 
+      )
 
     CreateAddress ->
       ( { model | uiStatus = AddNew
@@ -136,9 +144,9 @@ update msg model =
       ( { model | addresses = updatedAddresses
         , uiStatus = View }
       , Http.post {
-        url = "/customer/address/formPost/"
+        url = "/customer/address/formPost"
         , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
-        , expect = Http.expectString Posted
+        , expect = Http.expectWhatever Posted
         } 
       )
 
@@ -278,7 +286,7 @@ clearShipping : Addresses -> Addresses
 clearShipping addresses =
   Dict.map (\_ v -> { v | isDefaultShipping = False }) addresses  
 
-cookieParse : String -> (String, String)
+cookieParse : String -> {sessionId: String, formKey: String}
 cookieParse cookie =
   let
 
@@ -300,7 +308,7 @@ cookieParse cookie =
       |> Maybe.withDefault ""
 
   in
-  ( sessId, formKey )
+  { sessionId = sessId, formKey = formKey }
 
 
 
@@ -506,10 +514,10 @@ addressDecoder =
     |> required "is_default_billing" (oneOf [ bool, null False ])
 
 
-addressPostEncode : ( String, String) -> Address -> Value
-addressPostEncode ( sessionId, formKey ) address =
-  Encode.object [ ( "form_key", Encode.string formKey )
-    , ( "PHPSESSID", Encode.string sessionId )
+addressPostEncode : { sessionId : String, formKey : String } -> Address -> Value
+addressPostEncode sessionData address =
+  Encode.object [ ( "form_key", Encode.string sessionData.formKey )
+    , ( "PHPSESSID", Encode.string sessionData.sessionId )
     , ( "first_name",  Encode.string address.firstName ) 
     , ( "last_name", Encode.string address.lastName ) 
     , ( "middle_name", Encode.string address.middleName )
