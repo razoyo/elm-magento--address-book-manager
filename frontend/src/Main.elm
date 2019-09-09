@@ -65,7 +65,7 @@ init cookie =
     , editingAddress = newAddress
     , cookie = cookieParse cookie
     } 
-  , Http.get { url = "/razoyo/customer/addresses"
+  , Http.get { url = "https://paul.razoyo.com/razoyo/customer/addresses"
     , expect =  Http.expectString LoadAddresses
     } )
 
