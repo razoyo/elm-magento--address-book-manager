@@ -43,7 +43,7 @@ type alias Model = {
     uiStatus : UIStates
     , addresses : Addresses
     , editingAddress : Address
-    , cookie : String
+    , cookie : ( String , String )
   }
 
 
@@ -63,7 +63,7 @@ init cookie =
   ( { uiStatus = View
     , addresses = Dict.empty 
     , editingAddress = newAddress
-    , cookie = cookie
+    , cookie = cookieParse cookie
     } 
   , Http.get { url = "/razoyo/customer/addresses"
     , expect =  Http.expectString LoadAddresses
@@ -137,7 +137,7 @@ update msg model =
         , uiStatus = View }
       , Http.post {
         url = "/customer/address/formPost/"
-        , body = Http.jsonBody ( addressEncode model.editingAddress ) 
+        , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
         , expect = Http.expectString Posted
         } 
       )
@@ -281,8 +281,8 @@ clearShipping addresses =
 cookieParse : String -> (String, String)
 cookieParse cookie =
   let
+
     cookieList = String.split "; " cookie
-      |> List.filter (\x -> String.contains "PHPSESSID" x || String.contains "form_key" x)
       |> List.map (\x -> String.split "=" x)
 
     sessId = List.filter (\x -> List.member "PHPSESSID" x) cookieList
@@ -314,7 +314,6 @@ view model =
         View ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
             , wrappedRow [ width fill, padding 10 ] ( showAddresses model.addresses ) 
-            , row [] [ el [] ( text ( Debug.toString ( cookieParse model.cookie ) ) ) ]
             ]
 
         AddNew ->
@@ -507,10 +506,11 @@ addressDecoder =
     |> required "is_default_billing" (oneOf [ bool, null False ])
 
 
-addressEncode : Address -> Value
-addressEncode address =
-  Encode.object [ 
-    ( "first_name",  Encode.string address.firstName ) 
+addressPostEncode : ( String, String) -> Address -> Value
+addressPostEncode ( sessionId, formKey ) address =
+  Encode.object [ ( "form_key", Encode.string formKey )
+    , ( "PHPSESSID", Encode.string sessionId )
+    , ( "first_name",  Encode.string address.firstName ) 
     , ( "last_name", Encode.string address.lastName ) 
     , ( "middle_name", Encode.string address.middleName )
     , ( "prefix", Encode.string address.prefix )
