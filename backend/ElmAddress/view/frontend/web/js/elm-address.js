@@ -4522,6 +4522,9 @@ function _Browser_load(url)
 		}
 	}));
 }
+var author$project$Main$LoadAddresses = function (a) {
+	return {$: 'LoadAddresses', a: a};
+};
 var author$project$Main$View = {$: 'View'};
 var author$project$Stub$Address = function (mageId) {
 	return function (firstName) {
@@ -4638,9 +4641,8 @@ var elm$core$Set$toList = function (_n0) {
 var author$project$Main$newAddress = author$project$Stub$Address('-1')('')('')('')('')('')(
 	_List_fromArray(
 		['', '', '']))('')('')('')('')('')('')(false)(false);
-var author$project$Main$LoadAddresses = function (a) {
-	return {$: 'LoadAddresses', a: a};
-};
+var elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
+var elm$core$Dict$empty = elm$core$Dict$RBEmpty_elm_builtin;
 var elm$core$Result$Ok = function (a) {
 	return {$: 'Ok', a: a};
 };
@@ -4652,8 +4654,6 @@ var elm$core$Basics$composeR = F3(
 var elm$core$Basics$identity = function (x) {
 	return x;
 };
-var elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
-var elm$core$Dict$empty = elm$core$Dict$RBEmpty_elm_builtin;
 var elm$core$Basics$compare = _Utils_compare;
 var elm$core$Maybe$Just = function (a) {
 	return {$: 'Just', a: a};
@@ -5908,15 +5908,14 @@ var elm$http$Http$get = function (r) {
 	return elm$http$Http$request(
 		{body: elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
-var author$project$Main$requestAddressesFromMagento = elm$http$Http$get(
-	{
-		expect: elm$http$Http$expectString(author$project$Main$LoadAddresses),
-		url: '/razoyo/customer/addresses'
-	});
 var author$project$Main$init = function (cookie) {
 	return _Utils_Tuple2(
 		{addresses: elm$core$Dict$empty, cookie: cookie, editingAddress: author$project$Main$newAddress, uiStatus: author$project$Main$View},
-		author$project$Main$requestAddressesFromMagento);
+		elm$http$Http$get(
+			{
+				expect: elm$http$Http$expectString(author$project$Main$LoadAddresses),
+				url: '/razoyo/customer/addresses'
+			}));
 };
 var elm$core$Platform$Sub$batch = _Platform_batch;
 var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
@@ -5925,6 +5924,85 @@ var author$project$Main$subscriptions = function (model) {
 };
 var author$project$Main$AddNew = {$: 'AddNew'};
 var author$project$Main$Edit = {$: 'Edit'};
+var author$project$Main$Posted = function (a) {
+	return {$: 'Posted', a: a};
+};
+var elm$json$Json$Encode$bool = _Json_wrap;
+var elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			elm$core$List$foldl,
+			F2(
+				function (_n0, obj) {
+					var k = _n0.a;
+					var v = _n0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var elm$json$Json$Encode$string = _Json_wrap;
+var author$project$Main$addressEncode = function (address) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'first_name',
+				elm$json$Json$Encode$string(address.firstName)),
+				_Utils_Tuple2(
+				'last_name',
+				elm$json$Json$Encode$string(address.lastName)),
+				_Utils_Tuple2(
+				'middle_name',
+				elm$json$Json$Encode$string(address.middleName)),
+				_Utils_Tuple2(
+				'prefix',
+				elm$json$Json$Encode$string(address.prefix)),
+				_Utils_Tuple2(
+				'suffix',
+				elm$json$Json$Encode$string(address.suffix)),
+				_Utils_Tuple2(
+				'street',
+				elm$json$Json$Encode$string(
+					A2(
+						elm$json$Json$Encode$encode,
+						0,
+						A2(elm$json$Json$Encode$list, elm$json$Json$Encode$string, address.street)))),
+				_Utils_Tuple2(
+				'company',
+				elm$json$Json$Encode$string(address.company)),
+				_Utils_Tuple2(
+				'telephone',
+				elm$json$Json$Encode$string(address.telephone)),
+				_Utils_Tuple2(
+				'postcode',
+				elm$json$Json$Encode$string(address.postalCode)),
+				_Utils_Tuple2(
+				'city',
+				elm$json$Json$Encode$string(address.city)),
+				_Utils_Tuple2(
+				'region',
+				elm$json$Json$Encode$string(address.region)),
+				_Utils_Tuple2(
+				'country_id',
+				elm$json$Json$Encode$string(address.country)),
+				_Utils_Tuple2(
+				'is_default_shipping',
+				elm$json$Json$Encode$bool(address.isDefaultShipping)),
+				_Utils_Tuple2(
+				'is_default_billing',
+				elm$json$Json$Encode$bool(address.isDefaultBilling))
+			]));
+};
 var elm$core$Dict$map = F2(
 	function (func, dict) {
 		if (dict.$ === 'RBEmpty_elm_builtin') {
@@ -6210,7 +6288,6 @@ var author$project$Main$getAddresses = function (result) {
 			jsonAddresses);
 		if (_n1.$ === 'Ok') {
 			var v = _n1.a;
-			var _n2 = A2(elm$core$Debug$log, 'decoded!', v);
 			return elm$core$Dict$fromList(
 				A2(
 					elm$core$List$map,
@@ -6222,7 +6299,7 @@ var author$project$Main$getAddresses = function (result) {
 					v));
 		} else {
 			var e = _n1.a;
-			var _n3 = A2(elm$core$Debug$log, 'not decoded!', e);
+			var _n2 = A2(elm$core$Debug$log, 'not decoded!', e);
 			return emptyDict;
 		}
 	} else {
@@ -6240,6 +6317,16 @@ var elm$core$Maybe$withDefault = F2(
 	});
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
+var elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2(elm$json$Json$Encode$encode, 0, value));
+};
+var elm$http$Http$post = function (r) {
+	return elm$http$Http$request(
+		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
+};
 var author$project$Main$update = F2(
 	function (msg, model) {
 		var editAddress = model.editingAddress;
@@ -6298,7 +6385,13 @@ var author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{addresses: updatedAddresses, uiStatus: author$project$Main$View}),
-					elm$core$Platform$Cmd$none);
+					elm$http$Http$post(
+						{
+							body: elm$http$Http$jsonBody(
+								author$project$Main$addressEncode(model.editingAddress)),
+							expect: elm$http$Http$expectString(author$project$Main$Posted),
+							url: '/customer/address/formPost/'
+						}));
 			case 'UpdateFirstName':
 				var newFirst = msg.a;
 				var updateAddress = model.editingAddress;
@@ -6450,7 +6543,7 @@ var author$project$Main$update = F2(
 						model,
 						{editingAddress: resultAddress}),
 					elm$core$Platform$Cmd$none);
-			default:
+			case 'UpdateIsDefaultBilling':
 				var newDefaultBilling = msg.a;
 				var updateAddress = model.editingAddress;
 				var resultAddress = _Utils_update(
@@ -6461,6 +6554,20 @@ var author$project$Main$update = F2(
 						model,
 						{editingAddress: resultAddress}),
 					elm$core$Platform$Cmd$none);
+			default:
+				var result = msg.a;
+				var debug = function () {
+					if (result.$ === 'Err') {
+						var e = result.a;
+						var x = A2(elm$core$Debug$log, 'Post error', e);
+						return 'Error';
+					} else {
+						var v = result.a;
+						var x = A2(elm$core$Debug$log, 'Post success', v);
+						return 'OK';
+					}
+				}();
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Main$CreateAddress = {$: 'CreateAddress'};
@@ -6631,7 +6738,6 @@ var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$p = _VirtualDom_node('p');
 var elm$html$Html$s = _VirtualDom_node('s');
 var elm$html$Html$u = _VirtualDom_node('u');
-var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -9044,28 +9150,6 @@ var mdgriffith$elm_ui$Internal$Model$staticRoot = function (opts) {
 					]),
 				_List_Nil);
 	}
-};
-var elm$json$Json$Encode$list = F2(
-	function (func, entries) {
-		return _Json_wrap(
-			A3(
-				elm$core$List$foldl,
-				_Json_addEntry(func),
-				_Json_emptyArray(_Utils_Tuple0),
-				entries));
-	});
-var elm$json$Json$Encode$object = function (pairs) {
-	return _Json_wrap(
-		A3(
-			elm$core$List$foldl,
-			F2(
-				function (_n0, obj) {
-					var k = _n0.a;
-					var v = _n0.b;
-					return A3(_Json_addField, k, v, obj);
-				}),
-			_Json_emptyObject(_Utils_Tuple0),
-			pairs));
 };
 var elm$core$Basics$min = F2(
 	function (x, y) {
@@ -12880,7 +12964,6 @@ var mdgriffith$elm_ui$Element$Input$renderPlaceholder = F3(
 					placeholderAttrs)),
 			placeholderEl);
 	});
-var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
 		return A2(

@@ -278,6 +278,30 @@ clearShipping : Addresses -> Addresses
 clearShipping addresses =
   Dict.map (\_ v -> { v | isDefaultShipping = False }) addresses  
 
+cookieParse : String -> (String, String)
+cookieParse cookie =
+  let
+    cookieList = String.split "; " cookie
+      |> List.filter (\x -> String.contains "PHPSESSID" x || String.contains "form_key" x)
+      |> List.map (\x -> String.split "=" x)
+
+    sessId = List.filter (\x -> List.member "PHPSESSID" x) cookieList
+      |> List.head
+      |> Maybe.withDefault []
+      |> List.reverse
+      |> List.head
+      |> Maybe.withDefault ""
+
+    formKey = List.filter (\x -> List.member "form_key" x) cookieList
+      |> List.head
+      |> Maybe.withDefault []
+      |> List.reverse
+      |> List.head
+      |> Maybe.withDefault ""
+
+  in
+  ( sessId, formKey )
+
 
 
 -- VIEW
@@ -290,6 +314,7 @@ view model =
         View ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
             , wrappedRow [ width fill, padding 10 ] ( showAddresses model.addresses ) 
+            , row [] [ el [] ( text ( Debug.toString ( cookieParse model.cookie ) ) ) ]
             ]
 
         AddNew ->
