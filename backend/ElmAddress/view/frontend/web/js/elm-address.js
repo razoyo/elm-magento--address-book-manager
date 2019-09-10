@@ -6049,7 +6049,6 @@ var author$project$Main$Edit = {$: 'Edit'};
 var author$project$Main$Posted = function (a) {
 	return {$: 'Posted', a: a};
 };
-var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -6082,8 +6081,11 @@ var author$project$Main$addressPostEncode = F2(
 					'form_key',
 					elm$json$Json$Encode$string(sessionData.formKey)),
 					_Utils_Tuple2(
-					'PHPSESSID',
-					elm$json$Json$Encode$string(sessionData.sessionId)),
+					'success_url',
+					elm$json$Json$Encode$string('/customer/address/index')),
+					_Utils_Tuple2(
+					'error_url',
+					elm$json$Json$Encode$string('/customer')),
 					_Utils_Tuple2(
 					'first_name',
 					elm$json$Json$Encode$string(address.firstName)),
@@ -6123,13 +6125,7 @@ var author$project$Main$addressPostEncode = F2(
 					elm$json$Json$Encode$string(address.region)),
 					_Utils_Tuple2(
 					'country_id',
-					elm$json$Json$Encode$string(address.country)),
-					_Utils_Tuple2(
-					'is_default_shipping',
-					elm$json$Json$Encode$bool(address.isDefaultShipping)),
-					_Utils_Tuple2(
-					'is_default_billing',
-					elm$json$Json$Encode$bool(address.isDefaultBilling))
+					elm$json$Json$Encode$string(address.country))
 				]));
 	});
 var elm$core$Dict$map = F2(
@@ -6439,6 +6435,11 @@ var elm$http$Http$expectWhatever = function (toMsg) {
 				return elm$core$Result$Ok(_Utils_Tuple0);
 			}));
 };
+var elm$http$Http$Header = F2(
+	function (a, b) {
+		return {$: 'Header', a: a, b: b};
+	});
+var elm$http$Http$header = elm$http$Http$Header;
 var elm$http$Http$jsonBody = function (value) {
 	return A2(
 		_Http_pair,
@@ -6504,10 +6505,9 @@ var author$project$Main$update = F2(
 						model,
 						{uiStatus: author$project$Main$View}),
 					elm$core$Platform$Cmd$none);
-			case 'SaveAddressUpdate':
-				var addressId = msg.a;
+			case 'SaveNewAddress':
 				var checkedAddresses = A2(author$project$Main$ensureUniqueDefaults, model.editingAddress, model.addresses);
-				var updatedAddresses = A3(elm$core$Dict$insert, addressId, model.editingAddress, checkedAddresses);
+				var updatedAddresses = A3(elm$core$Dict$insert, 'new', model.editingAddress, checkedAddresses);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -6518,6 +6518,31 @@ var author$project$Main$update = F2(
 								A2(author$project$Main$addressPostEncode, model.cookie, model.editingAddress)),
 							expect: elm$http$Http$expectWhatever(author$project$Main$Posted),
 							url: '/customer/address/formPost'
+						}));
+			case 'SaveEditedAddress':
+				var id = msg.a;
+				var checkedAddresses = A2(author$project$Main$ensureUniqueDefaults, model.editingAddress, model.addresses);
+				var updatedAddresses = A3(elm$core$Dict$insert, id, model.editingAddress, checkedAddresses);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{addresses: updatedAddresses, uiStatus: author$project$Main$View}),
+					elm$http$Http$request(
+						{
+							body: elm$http$Http$jsonBody(
+								A2(author$project$Main$addressPostEncode, model.cookie, model.editingAddress)),
+							expect: elm$http$Http$expectWhatever(author$project$Main$Posted),
+							headers: _List_fromArray(
+								[
+									A2(elm$http$Http$header, 'Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3'),
+									A2(elm$http$Http$header, 'Accept-Language', 'en-US,en;q=0.9,it;q=0.8,fr;q=0.7'),
+									A2(elm$http$Http$header, 'Cache-Control', 'max-age=0'),
+									A2(elm$http$Http$header, 'Upgrade-Insecure-Requests', '1')
+								]),
+							method: 'POST',
+							timeout: elm$core$Maybe$Nothing,
+							tracker: elm$core$Maybe$Nothing,
+							url: '/customer/address/formPost/id/' + (id + '/')
 						}));
 			case 'UpdateFirstName':
 				var newFirst = msg.a;
@@ -6698,12 +6723,25 @@ var author$project$Main$update = F2(
 		}
 	});
 var author$project$Main$CreateAddress = {$: 'CreateAddress'};
-var author$project$Main$ViewAddresses = {$: 'ViewAddresses'};
-var author$project$Main$EditAddress = function (a) {
-	return {$: 'EditAddress', a: a};
-};
 var author$project$Main$RemoveAddress = function (a) {
 	return {$: 'RemoveAddress', a: a};
+};
+var author$project$Main$SaveEditedAddress = function (a) {
+	return {$: 'SaveEditedAddress', a: a};
+};
+var author$project$Main$SaveNewAddress = {$: 'SaveNewAddress'};
+var author$project$Main$ViewAddresses = {$: 'ViewAddresses'};
+var mdgriffith$elm_ui$Internal$Model$Rgba = F4(
+	function (a, b, c, d) {
+		return {$: 'Rgba', a: a, b: b, c: c, d: d};
+	});
+var mdgriffith$elm_ui$Element$rgb255 = F3(
+	function (red, green, blue) {
+		return A4(mdgriffith$elm_ui$Internal$Model$Rgba, red / 255, green / 255, blue / 255, 1);
+	});
+var author$project$Main$blue = A3(mdgriffith$elm_ui$Element$rgb255, 155, 155, 238);
+var author$project$Main$EditAddress = function (a) {
+	return {$: 'EditAddress', a: a};
 };
 var elm$core$Basics$neq = _Utils_notEqual;
 var author$project$Main$composeName = function (address) {
@@ -12284,9 +12322,6 @@ var author$project$Main$showAddresses = function (addresses) {
 	}(
 		elm$core$Dict$values(addresses));
 };
-var author$project$Main$SaveAddressUpdate = function (a) {
-	return {$: 'SaveAddressUpdate', a: a};
-};
 var author$project$Main$UpdateCity = function (a) {
 	return {$: 'UpdateCity', a: a};
 };
@@ -12613,10 +12648,6 @@ var mdgriffith$elm_ui$Element$Border$width = function (v) {
 			v,
 			v));
 };
-var mdgriffith$elm_ui$Internal$Model$Rgba = F4(
-	function (a, b, c, d) {
-		return {$: 'Rgba', a: a, b: b, c: c, d: d};
-	});
 var mdgriffith$elm_ui$Element$rgb = F3(
 	function (r, g, b) {
 		return A4(mdgriffith$elm_ui$Internal$Model$Rgba, r, g, b, 1);
@@ -13050,6 +13081,7 @@ var mdgriffith$elm_ui$Element$Input$renderPlaceholder = F3(
 					placeholderAttrs)),
 			placeholderEl);
 	});
+var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
 		return A2(
@@ -13527,104 +13559,6 @@ var mdgriffith$elm_ui$Element$wrappedRow = F2(
 			}
 		}
 	});
-var elm$html$Html$Attributes$disabled = elm$html$Html$Attributes$boolProperty('disabled');
-var elm$html$Html$Attributes$tabindex = function (n) {
-	return A2(
-		_VirtualDom_attribute,
-		'tabIndex',
-		elm$core$String$fromInt(n));
-};
-var mdgriffith$elm_ui$Element$pointer = A2(mdgriffith$elm_ui$Internal$Model$Class, mdgriffith$elm_ui$Internal$Flag$cursor, mdgriffith$elm_ui$Internal$Style$classes.cursorPointer);
-var mdgriffith$elm_ui$Element$Input$focusDefault = function (attrs) {
-	return A2(elm$core$List$any, mdgriffith$elm_ui$Element$Input$hasFocusStyle, attrs) ? mdgriffith$elm_ui$Internal$Model$NoAttribute : mdgriffith$elm_ui$Internal$Model$htmlClass('focusable');
-};
-var mdgriffith$elm_ui$Element$Input$enter = 'Enter';
-var elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
-	return {$: 'MayPreventDefault', a: a};
-};
-var elm$html$Html$Events$preventDefaultOn = F2(
-	function (event, decoder) {
-		return A2(
-			elm$virtual_dom$VirtualDom$on,
-			event,
-			elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
-	});
-var mdgriffith$elm_ui$Element$Input$onKey = F2(
-	function (desiredCode, msg) {
-		var decode = function (code) {
-			return _Utils_eq(code, desiredCode) ? elm$json$Json$Decode$succeed(msg) : elm$json$Json$Decode$fail('Not the enter key');
-		};
-		var isKey = A2(
-			elm$json$Json$Decode$andThen,
-			decode,
-			A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string));
-		return mdgriffith$elm_ui$Internal$Model$Attr(
-			A2(
-				elm$html$Html$Events$preventDefaultOn,
-				'keyup',
-				A2(
-					elm$json$Json$Decode$map,
-					function (fired) {
-						return _Utils_Tuple2(fired, true);
-					},
-					isKey)));
-	});
-var mdgriffith$elm_ui$Element$Input$onEnter = function (msg) {
-	return A2(mdgriffith$elm_ui$Element$Input$onKey, mdgriffith$elm_ui$Element$Input$enter, msg);
-};
-var mdgriffith$elm_ui$Internal$Model$Button = {$: 'Button'};
-var mdgriffith$elm_ui$Element$Input$button = F2(
-	function (attrs, _n0) {
-		var onPress = _n0.onPress;
-		var label = _n0.label;
-		return A4(
-			mdgriffith$elm_ui$Internal$Model$element,
-			mdgriffith$elm_ui$Internal$Model$asEl,
-			mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				elm$core$List$cons,
-				mdgriffith$elm_ui$Element$width(mdgriffith$elm_ui$Element$shrink),
-				A2(
-					elm$core$List$cons,
-					mdgriffith$elm_ui$Element$height(mdgriffith$elm_ui$Element$shrink),
-					A2(
-						elm$core$List$cons,
-						mdgriffith$elm_ui$Internal$Model$htmlClass(mdgriffith$elm_ui$Internal$Style$classes.contentCenterX + (' ' + (mdgriffith$elm_ui$Internal$Style$classes.contentCenterY + (' ' + (mdgriffith$elm_ui$Internal$Style$classes.seButton + (' ' + mdgriffith$elm_ui$Internal$Style$classes.noTextSelection)))))),
-						A2(
-							elm$core$List$cons,
-							mdgriffith$elm_ui$Element$pointer,
-							A2(
-								elm$core$List$cons,
-								mdgriffith$elm_ui$Element$Input$focusDefault(attrs),
-								A2(
-									elm$core$List$cons,
-									mdgriffith$elm_ui$Internal$Model$Describe(mdgriffith$elm_ui$Internal$Model$Button),
-									A2(
-										elm$core$List$cons,
-										mdgriffith$elm_ui$Internal$Model$Attr(
-											elm$html$Html$Attributes$tabindex(0)),
-										function () {
-											if (onPress.$ === 'Nothing') {
-												return A2(
-													elm$core$List$cons,
-													mdgriffith$elm_ui$Internal$Model$Attr(
-														elm$html$Html$Attributes$disabled(true)),
-													attrs);
-											} else {
-												var msg = onPress.a;
-												return A2(
-													elm$core$List$cons,
-													mdgriffith$elm_ui$Element$Events$onClick(msg),
-													A2(
-														elm$core$List$cons,
-														mdgriffith$elm_ui$Element$Input$onEnter(msg),
-														attrs));
-											}
-										}()))))))),
-			mdgriffith$elm_ui$Internal$Model$Unkeyed(
-				_List_fromArray(
-					[label])));
-	});
 var mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
 	return {$: 'AlignX', a: a};
 };
@@ -13632,6 +13566,8 @@ var mdgriffith$elm_ui$Internal$Model$Left = {$: 'Left'};
 var mdgriffith$elm_ui$Element$alignLeft = mdgriffith$elm_ui$Internal$Model$AlignX(mdgriffith$elm_ui$Internal$Model$Left);
 var mdgriffith$elm_ui$Internal$Model$CenterY = {$: 'CenterY'};
 var mdgriffith$elm_ui$Element$centerY = mdgriffith$elm_ui$Internal$Model$AlignY(mdgriffith$elm_ui$Internal$Model$CenterY);
+var mdgriffith$elm_ui$Element$pointer = A2(mdgriffith$elm_ui$Internal$Model$Class, mdgriffith$elm_ui$Internal$Flag$cursor, mdgriffith$elm_ui$Internal$Style$classes.cursorPointer);
+var mdgriffith$elm_ui$Element$Input$enter = 'Enter';
 var mdgriffith$elm_ui$Element$Input$onKeyLookup = function (lookup) {
 	var decode = function (code) {
 		var _n0 = lookup(code);
@@ -13650,6 +13586,12 @@ var mdgriffith$elm_ui$Element$Input$onKeyLookup = function (lookup) {
 		A2(elm$html$Html$Events$on, 'keyup', isKey));
 };
 var mdgriffith$elm_ui$Element$Input$space = ' ';
+var elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		elm$core$String$fromInt(n));
+};
 var mdgriffith$elm_ui$Element$Input$tabindex = A2(elm$core$Basics$composeL, mdgriffith$elm_ui$Internal$Model$Attr, elm$html$Html$Attributes$tabindex);
 var mdgriffith$elm_ui$Element$Input$checkbox = F2(
 	function (attrs, _n0) {
@@ -14106,32 +14048,6 @@ var author$project$Main$viewEditAddress = function (address) {
 								mdgriffith$elm_ui$Element$text('Default Billing')),
 							onChange: author$project$Main$UpdateIsDefaultBilling
 						})
-					])),
-				A2(
-				mdgriffith$elm_ui$Element$row,
-				_List_fromArray(
-					[
-						mdgriffith$elm_ui$Element$spacing(25),
-						mdgriffith$elm_ui$Element$padding(5)
-					]),
-				_List_fromArray(
-					[
-						A2(
-						mdgriffith$elm_ui$Element$Input$button,
-						_List_Nil,
-						{
-							label: mdgriffith$elm_ui$Element$text('Save Changes'),
-							onPress: elm$core$Maybe$Just(
-								author$project$Main$SaveAddressUpdate(address.mageId))
-						}),
-						A2(
-						mdgriffith$elm_ui$Element$el,
-						_List_fromArray(
-							[
-								mdgriffith$elm_ui$Element$Events$onClick(
-								author$project$Main$RemoveAddress(address.mageId))
-							]),
-						mdgriffith$elm_ui$Element$text('remove'))
 					]))
 			]));
 };
@@ -14389,6 +14305,96 @@ var mdgriffith$elm_ui$Element$layoutWith = F3(
 	});
 var mdgriffith$elm_ui$Element$layout = mdgriffith$elm_ui$Element$layoutWith(
 	{options: _List_Nil});
+var elm$html$Html$Attributes$disabled = elm$html$Html$Attributes$boolProperty('disabled');
+var mdgriffith$elm_ui$Element$Input$focusDefault = function (attrs) {
+	return A2(elm$core$List$any, mdgriffith$elm_ui$Element$Input$hasFocusStyle, attrs) ? mdgriffith$elm_ui$Internal$Model$NoAttribute : mdgriffith$elm_ui$Internal$Model$htmlClass('focusable');
+};
+var elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var elm$html$Html$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var mdgriffith$elm_ui$Element$Input$onKey = F2(
+	function (desiredCode, msg) {
+		var decode = function (code) {
+			return _Utils_eq(code, desiredCode) ? elm$json$Json$Decode$succeed(msg) : elm$json$Json$Decode$fail('Not the enter key');
+		};
+		var isKey = A2(
+			elm$json$Json$Decode$andThen,
+			decode,
+			A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string));
+		return mdgriffith$elm_ui$Internal$Model$Attr(
+			A2(
+				elm$html$Html$Events$preventDefaultOn,
+				'keyup',
+				A2(
+					elm$json$Json$Decode$map,
+					function (fired) {
+						return _Utils_Tuple2(fired, true);
+					},
+					isKey)));
+	});
+var mdgriffith$elm_ui$Element$Input$onEnter = function (msg) {
+	return A2(mdgriffith$elm_ui$Element$Input$onKey, mdgriffith$elm_ui$Element$Input$enter, msg);
+};
+var mdgriffith$elm_ui$Internal$Model$Button = {$: 'Button'};
+var mdgriffith$elm_ui$Element$Input$button = F2(
+	function (attrs, _n0) {
+		var onPress = _n0.onPress;
+		var label = _n0.label;
+		return A4(
+			mdgriffith$elm_ui$Internal$Model$element,
+			mdgriffith$elm_ui$Internal$Model$asEl,
+			mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				elm$core$List$cons,
+				mdgriffith$elm_ui$Element$width(mdgriffith$elm_ui$Element$shrink),
+				A2(
+					elm$core$List$cons,
+					mdgriffith$elm_ui$Element$height(mdgriffith$elm_ui$Element$shrink),
+					A2(
+						elm$core$List$cons,
+						mdgriffith$elm_ui$Internal$Model$htmlClass(mdgriffith$elm_ui$Internal$Style$classes.contentCenterX + (' ' + (mdgriffith$elm_ui$Internal$Style$classes.contentCenterY + (' ' + (mdgriffith$elm_ui$Internal$Style$classes.seButton + (' ' + mdgriffith$elm_ui$Internal$Style$classes.noTextSelection)))))),
+						A2(
+							elm$core$List$cons,
+							mdgriffith$elm_ui$Element$pointer,
+							A2(
+								elm$core$List$cons,
+								mdgriffith$elm_ui$Element$Input$focusDefault(attrs),
+								A2(
+									elm$core$List$cons,
+									mdgriffith$elm_ui$Internal$Model$Describe(mdgriffith$elm_ui$Internal$Model$Button),
+									A2(
+										elm$core$List$cons,
+										mdgriffith$elm_ui$Internal$Model$Attr(
+											elm$html$Html$Attributes$tabindex(0)),
+										function () {
+											if (onPress.$ === 'Nothing') {
+												return A2(
+													elm$core$List$cons,
+													mdgriffith$elm_ui$Internal$Model$Attr(
+														elm$html$Html$Attributes$disabled(true)),
+													attrs);
+											} else {
+												var msg = onPress.a;
+												return A2(
+													elm$core$List$cons,
+													mdgriffith$elm_ui$Element$Events$onClick(msg),
+													A2(
+														elm$core$List$cons,
+														mdgriffith$elm_ui$Element$Input$onEnter(msg),
+														attrs));
+											}
+										}()))))))),
+			mdgriffith$elm_ui$Internal$Model$Unkeyed(
+				_List_fromArray(
+					[label])));
+	});
 var author$project$Main$view = function (model) {
 	return A2(
 		mdgriffith$elm_ui$Element$layout,
@@ -14462,11 +14468,47 @@ var author$project$Main$view = function (model) {
 								_List_fromArray(
 									[
 										mdgriffith$elm_ui$Element$width(mdgriffith$elm_ui$Element$fill),
-										mdgriffith$elm_ui$Element$padding(10)
+										mdgriffith$elm_ui$Element$padding(15)
 									]),
 								_List_fromArray(
 									[
 										author$project$Main$viewEditAddress(model.editingAddress)
+									])),
+								A2(
+								mdgriffith$elm_ui$Element$wrappedRow,
+								_List_fromArray(
+									[
+										mdgriffith$elm_ui$Element$spacing(25),
+										mdgriffith$elm_ui$Element$padding(15)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												mdgriffith$elm_ui$Element$padding(15),
+												mdgriffith$elm_ui$Element$Background$color(author$project$Main$blue)
+											]),
+										{
+											label: mdgriffith$elm_ui$Element$text('Create Address'),
+											onPress: elm$core$Maybe$Just(author$project$Main$SaveNewAddress)
+										}),
+										A2(
+										mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												mdgriffith$elm_ui$Element$Events$onClick(
+												author$project$Main$RemoveAddress(model.editingAddress.mageId))
+											]),
+										mdgriffith$elm_ui$Element$text('remove')),
+										A2(
+										mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												mdgriffith$elm_ui$Element$Events$onClick(author$project$Main$ViewAddresses)
+											]),
+										mdgriffith$elm_ui$Element$text('cancel'))
 									]))
 							]));
 				default:
@@ -14505,6 +14547,43 @@ var author$project$Main$view = function (model) {
 								_List_fromArray(
 									[
 										author$project$Main$viewEditAddress(model.editingAddress)
+									])),
+								A2(
+								mdgriffith$elm_ui$Element$wrappedRow,
+								_List_fromArray(
+									[
+										mdgriffith$elm_ui$Element$spacing(25),
+										mdgriffith$elm_ui$Element$padding(15)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												mdgriffith$elm_ui$Element$padding(15),
+												mdgriffith$elm_ui$Element$Background$color(author$project$Main$blue)
+											]),
+										{
+											label: mdgriffith$elm_ui$Element$text('Save Changes'),
+											onPress: elm$core$Maybe$Just(
+												author$project$Main$SaveEditedAddress(model.editingAddress.mageId))
+										}),
+										A2(
+										mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												mdgriffith$elm_ui$Element$Events$onClick(
+												author$project$Main$RemoveAddress(model.editingAddress.mageId))
+											]),
+										mdgriffith$elm_ui$Element$text('remove')),
+										A2(
+										mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												mdgriffith$elm_ui$Element$Events$onClick(author$project$Main$ViewAddresses)
+											]),
+										mdgriffith$elm_ui$Element$text('cancel'))
 									]))
 							]));
 			}

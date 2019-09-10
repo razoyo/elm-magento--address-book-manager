@@ -4,6 +4,7 @@ import Browser
 
 -- We're using elm-ui for styling
 import Element exposing (..)
+import Element.Background as Background
 import Element.Events exposing (onClick)
 import Element.Input as Input
 
@@ -82,7 +83,8 @@ type Msg = Changed Value
   | EditAddress String
   | CreateAddress
   | ViewAddresses
-  | SaveAddressUpdate String
+  | SaveNewAddress
+  | SaveEditedAddress String
   | UpdateFirstName String 
   | UpdateLastName String 
   | UpdateMiddleName String
@@ -136,10 +138,10 @@ update msg model =
     ViewAddresses ->
       ( { model | uiStatus = View }, Cmd.none )
 
-    SaveAddressUpdate addressId ->
+    SaveNewAddress ->
       let
         checkedAddresses = ensureUniqueDefaults model.editingAddress model.addresses
-        updatedAddresses = Dict.insert addressId model.editingAddress checkedAddresses
+        updatedAddresses = Dict.insert "new" model.editingAddress checkedAddresses
       in
       ( { model | addresses = updatedAddresses
         , uiStatus = View }
@@ -149,6 +151,35 @@ update msg model =
         , expect = Http.expectWhatever Posted
         } 
       )
+
+    SaveEditedAddress id ->
+      let
+        checkedAddresses = ensureUniqueDefaults model.editingAddress model.addresses
+        updatedAddresses = Dict.insert id model.editingAddress checkedAddresses
+      in
+      ( { model | addresses = updatedAddresses
+        , uiStatus = View }
+      , Http.request {
+        method = "POST"
+        , url = "/customer/address/formPost/id/" ++ id ++ "/"
+        , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
+        , headers = [
+          Http.header "Accept" "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
+          , Http.header "Accept-Language" "en-US,en;q=0.9,it;q=0.8,fr;q=0.7"
+          , Http.header "Cache-Control" "max-age=0"
+          , Http.header "Upgrade-Insecure-Requests" "1"
+          ]
+        , expect = Http.expectWhatever Posted
+        , timeout = Nothing
+        , tracker = Nothing
+        {-
+        url = "/customer/address/formPost/id/" ++ id ++ "/"
+        , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
+        , expect = Http.expectWhatever Posted
+        -}
+        } 
+      )
+      
 
     UpdateFirstName newFirst ->
       let
@@ -326,12 +357,24 @@ view model =
 
         AddNew ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
-            , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model.editingAddress ]
+            , wrappedRow [ width fill, padding 15 ] [ viewEditAddress model.editingAddress ]
+            , wrappedRow [ spacing 25, padding 15 ] [ Input.button [ padding 15, Background.color blue] { onPress = Just ( SaveNewAddress )
+              , label = text "Create Address"
+              }
+            , el [ onClick (RemoveAddress model.editingAddress.mageId) ] (text "remove")
+            , el [ onClick ViewAddresses ] (text "cancel")
             ]
+          ]
 
         Edit ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
             , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model.editingAddress ]
+            , wrappedRow [ spacing 25, padding 15 ] [ Input.button [ padding 15, Background.color blue] { onPress = Just ( SaveEditedAddress model.editingAddress.mageId )
+              , label = text "Save Changes"
+              }
+            , el [ onClick (RemoveAddress model.editingAddress.mageId) ] (text "remove")
+            , el [ onClick ViewAddresses ] (text "cancel")
+            ]
           ]
 
 
@@ -430,11 +473,6 @@ viewEditAddress address =
         , checked = address.isDefaultBilling
       }
     ]
-    , row [ spacing 25, padding 5 ] [ Input.button [] { onPress = Just ( SaveAddressUpdate address.mageId )
-      , label = text "Save Changes"
-      }
-      , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
-    ]
   ]
 
 
@@ -517,7 +555,8 @@ addressDecoder =
 addressPostEncode : { sessionId : String, formKey : String } -> Address -> Value
 addressPostEncode sessionData address =
   Encode.object [ ( "form_key", Encode.string sessionData.formKey )
-    , ( "PHPSESSID", Encode.string sessionData.sessionId )
+    , ( "success_url", Encode.string "/customer/address/index" )
+    , ( "error_url", Encode.string "/customer" )
     , ( "first_name",  Encode.string address.firstName ) 
     , ( "last_name", Encode.string address.lastName ) 
     , ( "middle_name", Encode.string address.middleName )
@@ -533,3 +572,7 @@ addressPostEncode sessionData address =
     , ( "is_default_shipping", Encode.bool address.isDefaultShipping )
     , ( "is_default_billing", Encode.bool address.isDefaultBilling )
   ]
+
+
+-- Styles
+blue = Element.rgb255 155 155 238
