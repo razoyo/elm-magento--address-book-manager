@@ -55,7 +55,7 @@ type UIStates = View
   
 newAddress : Address
 newAddress = 
-  Address "-1" "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
+  Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
 
 
 -- 
@@ -114,6 +114,9 @@ update msg model =
       ( { model | addresses = getAddresses result }, Cmd.none )
 
     EditAddress addressId ->
+      let
+        debug = Debug.log "getting the Dict" model.addresses
+      in
       ( { model | uiStatus = Edit
         , editingAddress = Dict.get addressId model.addresses |> \x -> Maybe.withDefault newAddress x  
         }, Cmd.none )
@@ -384,6 +387,9 @@ showAddresses addresses =
 
 viewAddress : Address -> Element Msg
 viewAddress address =
+  let
+    debug = Debug.log "view address ID" address.mageId
+  in
   column [ width fill, spacing 10, padding 5, alignTop ] [
      text ( composeName address )
      , column [] (List.map (\x -> el [] (text x)) address.street)
