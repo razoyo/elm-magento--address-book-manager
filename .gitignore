@@ -1,6 +1,7 @@
 .env
 favicon.ico
 
+/backend/ElmAddress/view/frontend/web/js/elm-address.js
 /frontend/elm-stuff
 /frontend/node_modules
 

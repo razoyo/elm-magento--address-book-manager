@@ -147,7 +147,7 @@ update msg model =
         , uiStatus = View }
       , Http.post {
         url = "/customer/address/formPost"
-        , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
+        , body = addressPostEncode model.cookie model.editingAddress
         , expect = Http.expectWhatever Posted
         } 
       )
@@ -162,9 +162,9 @@ update msg model =
       , Http.request {
         method = "POST"
         , url = "/customer/address/formPost/id/" ++ id ++ "/"
-        , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
-        , headers = [
-          Http.header "Accept" "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
+        , body = addressPostEncode model.cookie model.editingAddress
+        , headers = 
+          [ Http.header "Accept" "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
           , Http.header "Accept-Language" "en-US,en;q=0.9,it;q=0.8,fr;q=0.7"
           , Http.header "Cache-Control" "max-age=0"
           , Http.header "Upgrade-Insecure-Requests" "1"
@@ -552,26 +552,32 @@ addressDecoder =
     |> required "is_default_billing" (oneOf [ bool, null False ])
 
 
-addressPostEncode : { sessionId : String, formKey : String } -> Address -> Value
+addressPostEncode : { sessionId : String, formKey : String } -> Address -> Http.Body
 addressPostEncode sessionData address =
-  Encode.object [ ( "form_key", Encode.string sessionData.formKey )
-    , ( "success_url", Encode.string "/customer/address/index" )
-    , ( "error_url", Encode.string "/customer" )
-    , ( "first_name",  Encode.string address.firstName ) 
-    , ( "last_name", Encode.string address.lastName ) 
-    , ( "middle_name", Encode.string address.middleName )
-    , ( "prefix", Encode.string address.prefix )
-    , ( "suffix", Encode.string address.suffix )
-    , ( "street", Encode.string (Encode.encode 0 (Encode.list Encode.string address.street) ))
-    , ( "company", Encode.string address.company)
-    , ( "telephone", Encode.string address.telephone )
-    , ( "postcode", Encode.string address.postalCode )
-    , ( "city", Encode.string address.city )
-    , ( "region", Encode.string address.region )
-    , ( "country_id", Encode.string address.country )
-    , ( "is_default_shipping", Encode.bool address.isDefaultShipping )
-    , ( "is_default_billing", Encode.bool address.isDefaultBilling )
-  ]
+  let
+    (street1, street2, street3) =
+      case address.street of
+        [s1, s2, s3] -> (s1, s2, s3)
+        _ -> ("", "", "")
+  in
+    Http.multipartBody 
+      [ Http.stringPart "form_key" sessionData.formKey
+      , Http.stringPart "firstname" address.firstName
+      , Http.stringPart "lastname" address.lastName
+      , Http.stringPart "company" address.company
+      , Http.stringPart "telephone" address.telephone
+      , Http.stringPart "street[]" street1
+      , Http.stringPart "street[]" street2
+      , Http.stringPart "street[]" street3
+      , Http.stringPart "vat_id" ""
+      , Http.stringPart "city" address.city
+      , Http.stringPart "region_id" "57"
+      , Http.stringPart "region" "TX"
+      , Http.stringPart "postcode" address.postalCode
+      , Http.stringPart "country_id" "US"
+      , Http.stringPart "default_billing" (if address.isDefaultBilling then "1" else "0")
+      , Http.stringPart "default_shipping" (if address.isDefaultShipping then "1" else "0")
+      ]
 
 
 -- Styles
