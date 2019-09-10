@@ -61,9 +61,6 @@ newAddress =
 -- 
 init : String -> ( Model, Cmd Msg )
 init cookie =
-  let
-    debug = Debug.log "parsed cookie" ( cookieParse cookie )
-  in
   ( { uiStatus = View
     , addresses = Dict.empty 
     , editingAddress = newAddress
@@ -172,11 +169,6 @@ update msg model =
         , expect = Http.expectWhatever Posted
         , timeout = Nothing
         , tracker = Nothing
-        {-
-        url = "/customer/address/formPost/id/" ++ id ++ "/"
-        , body = Http.jsonBody ( addressPostEncode model.cookie model.editingAddress ) 
-        , expect = Http.expectWhatever Posted
-        -}
         } 
       )
       
@@ -345,6 +337,9 @@ cookieParse cookie =
 
 -- VIEW
 
+type ButtonAction = Update
+  | SaveNew
+
 view : Model -> Html Msg
 view model =
   layout []
@@ -357,21 +352,16 @@ view model =
 
         AddNew ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
-            , wrappedRow [ width fill, padding 15 ] [ viewEditAddress model.editingAddress ]
-            , wrappedRow [ spacing 25, padding 15 ] [ Input.button [ padding 15, Background.color blue] { onPress = Just ( SaveNewAddress )
-              , label = text "Create Address"
-              }
-            , el [ onClick (RemoveAddress model.editingAddress.mageId) ] (text "remove")
+            , wrappedRow [ width fill, padding 15 ] [ viewEditAddress model model.editingAddress ]
+            , wrappedRow [ spacing 25, padding 15 ] [ renderButton model SaveNew
             , el [ onClick ViewAddresses ] (text "cancel")
             ]
           ]
 
         Edit ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
-            , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model.editingAddress ]
-            , wrappedRow [ spacing 25, padding 15 ] [ Input.button [ padding 15, Background.color blue] { onPress = Just ( SaveEditedAddress model.editingAddress.mageId )
-              , label = text "Save Changes"
-              }
+            , wrappedRow [ width fill, padding 10 ] [ viewEditAddress model model.editingAddress ]
+            , wrappedRow [ spacing 25, padding 15 ] [ renderButton model Update
             , el [ onClick (RemoveAddress model.editingAddress.mageId) ] (text "remove")
             , el [ onClick ViewAddresses ] (text "cancel")
             ]
@@ -380,17 +370,16 @@ view model =
 
 showAddresses : Addresses -> List ( Element Msg )
 showAddresses addresses =
-  
+  if Dict.size addresses == 0 then
+    [
+      column [ width fill, height (px 300) ] [
+        el [ centerX, centerY ] ( text "You have no addresses" )
+      ]
+    ]
+  else
+     
   Dict.values addresses
     |> \x -> List.map viewAddress x
-
-
-showAddress : String -> Addresses -> Element Msg -- May not need this function in final version | only reason to show single address is to edit it
-showAddress addressId addresses =
-  
-  Dict.get addressId addresses
-    |> \y -> Maybe.withDefault newAddress y
-    |> \x -> viewEditAddress x
 
 
 viewAddress : Address -> Element Msg
@@ -410,8 +399,8 @@ viewAddress address =
      ]
 
 
-viewEditAddress : Address -> Element Msg
-viewEditAddress address =
+viewEditAddress : Model -> Address -> Element Msg
+viewEditAddress model address =
   column [ width fill, spacing 10, padding 5, alignTop ] [
     wrappedRow [ width fill, spacing 5 ] [ Input.text [ width (fillPortion 1) ] { label = Input.labelAbove [] (text "Prefix")
       , text = address.prefix
@@ -456,10 +445,20 @@ viewEditAddress address =
       , onChange = UpdatePostalCode
       } 
     ]
-    , row [width ( fill |> maximum 350 ), spacing 5] [ Input.text [] { label = Input.labelAbove [] (text "Country")
-      , text = address.country
-      , placeholder = Just (Input.placeholder [ htmlAttribute (Html.Attributes.id "country") ] ( text address.country ))
-      , onChange = UpdateCountry
+    , row [width ( fill |> maximum 350 ), spacing 5] [ 
+      Input.button ( countryButton "US" model )
+        { onPress = Just ( UpdateCountry "US" )
+        , label = ( text "United States" )
+        }
+      , Input.button ( countryButton "CA" model )
+        { onPress = Just ( UpdateCountry "CA" )
+        , label = ( text "Canada" )
+        }
+    ]
+    , row [width ( fill |> maximum 350 ), spacing 5] [ Input.text [] { label = Input.labelAbove [] (text "Telephone")
+      , text = address.telephone
+      , placeholder = Just (Input.placeholder [ htmlAttribute (Html.Attributes.id "telehpone") ] ( text address.telephone ))
+      , onChange = UpdateTelephone
       }
     ]
     , row [ spacing 10 ] [ Input.checkbox [] { label = Input.labelRight [ padding 10 ] (text "Default Shipping")
@@ -504,13 +503,51 @@ composeStreetInputBlock streetAddresses =
     )
 
 
+renderButton : Model -> ButtonAction -> Element Msg
+renderButton  model action =
+  let
+    address = model.editingAddress
+
+    buttonStatus =
+      String.length address.firstName > 0
+      && String.length address.lastName > 0
+      && String.length ( List.head address.street |> Maybe.withDefault "" ) > 0
+      && String.length address.city > 0
+      && String.length address.region > 1
+      && String.length address.postalCode > 4
+      && String.length address.country > 1
+      && String.length address.telephone > 1
+
+    ( buttonAction, buttonMessage ) =
+      case action of
+        Update ->
+          ( Just ( SaveEditedAddress address.mageId ), "Save Edits" )
+
+        SaveNew -> 
+          ( Just ( SaveNewAddress ), "Create Address" )
+  in
+    case buttonStatus of
+      True ->
+         Input.button [ padding 15
+          , Background.color blue ] 
+          { onPress = buttonAction
+          , label = text buttonMessage
+          }
+
+      False ->
+        Input.button [ padding 15
+          , Background.color gray ] 
+          { onPress = Nothing
+          , label = text buttonMessage
+          }
+
 
 --- HTTP
 
 getAddresses : (Result Http.Error String) -> Addresses
 getAddresses result =
   let 
-    emptyDict = Dict.insert "-1" newAddress Dict.empty
+    emptyDict = Dict.empty --Dict.insert "-1" newAddress Dict.empty
   in
     case result of
       Ok jsonAddresses ->
@@ -518,9 +555,6 @@ getAddresses result =
           Ok v ->
               List.map ( \x -> ( x.mageId, normalizeStreetBlock x ) ) v |> Dict.fromList
           Err e ->
-            let
-              _ = Debug.log "not decoded!" e
-            in
               emptyDict
 
       Err _ -> 
@@ -581,4 +615,21 @@ addressPostEncode sessionData address =
 
 
 -- Styles
+
 blue = Element.rgb255 155 155 238
+
+gray = Element.rgb255 155 155 155
+
+green = Element.rgb255 155 238 155
+
+countryButton : String -> Model -> List ( Element.Attribute msg )
+countryButton country model =
+  let
+    pad = padding 15
+  in
+  if model.editingAddress.country == country then
+    [ Background.color green, pad ]
+
+  else
+    [ Background.color gray, pad ]
+
