@@ -68,6 +68,7 @@ type alias Address = { mageId: String
   , postalCode: String
   , city: String
   , region: String
+  , regionId: String
   , country: String 
   , isDefaultShipping : Bool
   , isDefaultBilling : Bool
@@ -75,7 +76,7 @@ type alias Address = { mageId: String
               
 newAddress : Address
 newAddress = 
-  Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
+  Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" "" "US" False False
 
 
 -- 
@@ -114,6 +115,7 @@ type Msg = Changed Value
   | UpdatePostalCode String
   | UpdateCity String
   | UpdateRegion String
+  | AcceptRegionSuggestion
   | UpdateCountry String
   | UpdateIsDefaultShipping Bool 
   | UpdateIsDefaultBilling Bool
@@ -135,9 +137,6 @@ update msg model =
       ( { model | addresses = getAddresses result }, Cmd.none )
 
     EditAddress addressId ->
-      let
-        debug = Debug.log "getting the Dict" model.addresses
-      in
       ( { model | uiStatus = Edit
         , editingAddress = Dict.get addressId model.addresses |> \x -> Maybe.withDefault newAddress x  
         }, Cmd.none )
@@ -274,6 +273,12 @@ update msg model =
           }, Cmd.none 
         )
 
+    AcceptRegionSuggestion ->
+      let
+        resultAddress = { editAddress | region = model.suggestRegion }
+      in
+      ( { model | editingAddress = resultAddress }, Cmd.none )
+
     UpdateCountry newCountry ->
       let
         resultAddress = { editAddress | country = newCountry }
@@ -298,17 +303,10 @@ update msg model =
         debug = 
           case result of 
             Err e ->
-              let
-                x = Debug.log "Post error" e
-              in
                 "Error"
 
             Ok v ->
-              let
-                x = Debug.log "Post success" v
-              in
                 "OK"
-
       in
       ( model, Cmd.none )
 
@@ -452,17 +450,25 @@ viewEditAddress model address =
       } 
     ]
     , composeStreetInputBlock address.street
-    , row [ spacing 5, padding 5 ] [ Input.text [ htmlAttribute (Html.Attributes.id "city") ] { label = Input.labelAbove [] (text "City")
+    , row [ spacing 5, padding 5 ] [ Input.text [ htmlAttribute (Html.Attributes.id "city"), alignTop ] 
+      { label = Input.labelAbove [ alignTop ] (text "City")
       , text = address.city
       , placeholder = Just (Input.placeholder []( text address.city ))
       , onChange = UpdateCity
-      } 
-    , Input.text [ htmlAttribute (Html.Attributes.id "region") ] { label = Input.labelAbove [] (text "Region/State")
-      , text = address.region
-      , placeholder = Just ( Input.placeholder [] ( text model.suggestRegion ) )
-      , onChange = UpdateRegion
-      } 
-    , Input.text [ htmlAttribute (Html.Attributes.id "post_code") ] { label = Input.labelAbove [] (text "PostalCode")
+      }
+    , column [ width ( fill |> minimum 150 ) ] [ Input.text [ htmlAttribute (Html.Attributes.id "region"), alignTop ] 
+        { label = Input.labelAbove [] (text (if address.country == "US" then "State" else "Provence"))
+        , text = address.region
+        , placeholder = Nothing
+        , onChange = UpdateRegion
+        } 
+      , el [ onClick AcceptRegionSuggestion ] (text model.suggestRegion) 
+    ]
+    , Input.text [ htmlAttribute (Html.Attributes.id "post_code")
+        , alignTop
+        , width (fill |> maximum 100 )
+        ] 
+      { label = Input.labelAbove [] (text "PostalCode")
       , text = address.postalCode
       , placeholder = Just (Input.placeholder []( text address.postalCode ))
       , onChange = UpdatePostalCode
@@ -604,6 +610,7 @@ addressDecoder =
     |> required "postcode" string
     |> required "city" string
     |> required "region" string
+    |> required "region_id" string
     |> required "country_id" string
     |> required "is_default_shipping" (oneOf [ bool, null False ])
     |> required "is_default_billing" (oneOf [ bool, null False ])
@@ -628,8 +635,8 @@ addressPostEncode sessionData address =
       , Http.stringPart "street[]" street3
       , Http.stringPart "vat_id" ""
       , Http.stringPart "city" address.city
-      , Http.stringPart "region_id" "57"
-      , Http.stringPart "region" "TX"
+      , Http.stringPart "region_id" address.regionId
+      , Http.stringPart "region" address.region
       , Http.stringPart "postcode" address.postalCode
       , Http.stringPart "country_id" "US"
       , Http.stringPart "default_billing" (if address.isDefaultBilling then "1" else "0")
