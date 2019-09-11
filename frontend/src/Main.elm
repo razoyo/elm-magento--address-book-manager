@@ -19,7 +19,7 @@ import Json.Encode as Encode exposing (Value)
 import Json.Decode.Pipeline exposing (required, optional, hardcoded)
 
 -- Local app imports
-import Stub exposing (..)
+import Validate exposing (stateOptions)
 
 main =
   Browser.element
@@ -44,6 +44,7 @@ type alias Model = {
     uiStatus : UIStates
     , addresses : Addresses
     , editingAddress : Address
+    , suggestRegion : String
     , cookie : { sessionId: String , formKey: String }
   }
 
@@ -52,7 +53,26 @@ type UIStates = View
   | AddNew 
   | Edit
   
-  
+type alias Addresses
+  = Dict.Dict String Address
+
+type alias Address = { mageId: String
+  , firstName: String
+  , lastName: String
+  , middleName: String
+  , prefix: String
+  , suffix: String
+  , street: List String
+  , company: String
+  , telephone: String
+  , postalCode: String
+  , city: String
+  , region: String
+  , country: String 
+  , isDefaultShipping : Bool
+  , isDefaultBilling : Bool
+  }
+              
 newAddress : Address
 newAddress = 
   Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" "" False False
@@ -64,6 +84,7 @@ init cookie =
   ( { uiStatus = View
     , addresses = Dict.empty 
     , editingAddress = newAddress
+    , suggestRegion = ""
     , cookie = cookieParse cookie
     } 
   , Http.get { url = "/razoyo/customer/addresses/"
@@ -178,101 +199,97 @@ update msg model =
 
     UpdateFirstName newFirst ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | firstName = newFirst }
+        resultAddress = { editAddress | firstName = newFirst }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateLastName newLast->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | lastName = newLast }
+        resultAddress = { editAddress | lastName = newLast }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateMiddleName newMiddle ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | middleName = newMiddle }
+        resultAddress = { editAddress | middleName = newMiddle }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdatePrefix newPrefix ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | prefix = newPrefix }
+        resultAddress = { editAddress | prefix = newPrefix }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateSuffix newSuffix ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | suffix = newSuffix }
+        resultAddress = { editAddress | suffix = newSuffix }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateStreet index newStreet ->
       let
         streets = List.indexedMap (\x y -> if x == index then newStreet else y) model.editingAddress.street
-        updateAddress = model.editingAddress
-        resultAddress = { updateAddress | street = streets }
+        resultAddress = { editAddress | street = streets }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateCompany newCompany ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | company = newCompany }
+        resultAddress = { editAddress | company = newCompany }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateTelephone newPhone ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | telephone = newPhone }
+        resultAddress = { editAddress | telephone = newPhone }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdatePostalCode newPostal ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | postalCode = newPostal }
+        resultAddress = { editAddress | postalCode = newPostal }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateCity newCity ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | city = newCity }
+        resultAddress = { editAddress | city = newCity }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateRegion newRegion ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | region = newRegion }
+        regionOptions = stateOptions -- add option for Canada
+        suggestRegion = 
+          if ( String.length newRegion ) > 1 then
+            List.head ( Dict.toList ( Dict.filter (\x y -> String.contains newRegion y )  regionOptions )) 
+              |> Maybe.withDefault ( "","" )
+              |> Tuple.second
+          else ""
+        resultAddress = { editAddress | region = newRegion }
       in
-        ( { model | editingAddress = resultAddress }, Cmd.none )
+        ( { model | editingAddress = resultAddress
+          , suggestRegion = suggestRegion 
+          }, Cmd.none 
+        )
 
     UpdateCountry newCountry ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | country = newCountry }
+        resultAddress = { editAddress | country = newCountry }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateIsDefaultShipping newDefaultShipping ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | isDefaultShipping = newDefaultShipping }
+        resultAddress = { editAddress | isDefaultShipping = newDefaultShipping }
       in
 
       ( { model | editingAddress = resultAddress }, Cmd.none )
 
     UpdateIsDefaultBilling newDefaultBilling ->
       let
-        updateAddress = model.editingAddress 
-        resultAddress = { updateAddress | isDefaultBilling = newDefaultBilling }
+        resultAddress = { editAddress | isDefaultBilling = newDefaultBilling }
       in
         ( { model | editingAddress = resultAddress }, Cmd.none )
 
@@ -442,7 +459,7 @@ viewEditAddress model address =
       } 
     , Input.text [ htmlAttribute (Html.Attributes.id "region") ] { label = Input.labelAbove [] (text "Region/State")
       , text = address.region
-      , placeholder = Just (Input.placeholder []( text address.region ))
+      , placeholder = Just ( Input.placeholder [] ( text model.suggestRegion ) )
       , onChange = UpdateRegion
       } 
     , Input.text [ htmlAttribute (Html.Attributes.id "post_code") ] { label = Input.labelAbove [] (text "PostalCode")
