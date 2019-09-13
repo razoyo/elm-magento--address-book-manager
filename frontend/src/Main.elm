@@ -373,18 +373,19 @@ type ButtonAction = Update
 
 view : Model -> Html Msg
 view model =
-  layout []
+  layout [ width fill, padding 5 ]
     <|
       case model.uiStatus of
         View ->
-          column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
+          column [ width fill ] [ 
+            row [ width fill ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
             , wrappedRow [ width fill, padding 10 ] ( showAddresses model.addresses ) 
             ]
 
         AddNew ->
           column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
-            , wrappedRow [ width fill, padding 15 ] [ viewEditAddress model model.editingAddress ]
-            , wrappedRow [ spacing 25, padding 15 ] [ renderButton model SaveNew
+            , wrappedRow [ width fill, spacing 15 ] [ viewEditAddress model model.editingAddress ]
+            , wrappedRow [ spacing 25, width fill ] [ renderButton model SaveNew
             , el [ onClick ViewAddresses ] (text "cancel")
             ]
           ]
@@ -415,19 +416,19 @@ showAddresses addresses =
 
 viewAddress : Address -> Element Msg
 viewAddress address =
-  column [ width fill, spacing 10, padding 5, alignTop ] [
+  column [ width ( fill |> maximum 360 ), alignTop ] [
      text ( composeName address )
      , column [ spacing 10 ] (List.map (\x -> el [] (text x)) address.street)
-     , row [ spacing 10 ] [ el [] (text ( address.city ++ ",") )
+     , wrappedRow [ spacing 10, width fill ] [ el [] (text ( address.city ++ ",") )
        , el [] (text address.region)
        , el [] (text address.postalCode)
      ]
      , el [] (text address.country)
-     , row [spacing 20, Font.color blue ] [
+     , wrappedRow [spacing 20, Font.color blue, width fill ] [
        (if address.isDefaultShipping then (el [] (text "Default Shipping"))  else none)
        , (if address.isDefaultBilling then (el [] (text "Default Billing"))  else none)
      ]
-     , row [ Font.color blue, spacing 20, Font.size 14 ] [
+     , wrappedRow [ Font.color blue, spacing 20, Font.size 14, width fill ] [
        el [ onClick (RemoveAddress address.mageId) ] (text "remove")
        , el [ onClick (EditAddress address.mageId) ] (text "edit")
        ]
@@ -436,7 +437,7 @@ viewAddress address =
 
 viewEditAddress : Model -> Address -> Element Msg
 viewEditAddress model address =
-  column [ width fill, spacing 10, padding 5, alignTop ] [
+  column [ width fill, alignTop, spacing 5 ] [
     wrappedRow [ width fill, spacing 5 ] [ Input.text [ width (fillPortion 1) ] { label = Input.labelAbove [] (text "Prefix")
       , text = address.prefix
       , placeholder = Just (Input.placeholder []( text address.prefix ))
@@ -464,7 +465,7 @@ viewEditAddress model address =
       } 
     ]
     , composeStreetInputBlock address.street
-    , row [ spacing 5, padding 5 ] [ Input.text [ htmlAttribute (Html.Attributes.id "city"), alignTop ] 
+    , wrappedRow [ spacing 5, width fill ] [ Input.text [ htmlAttribute (Html.Attributes.id "city"), alignTop ] 
       { label = Input.labelAbove [ alignTop ] (text "City")
       , text = address.city
       , placeholder = Just (Input.placeholder []( text address.city ))
@@ -482,7 +483,7 @@ viewEditAddress model address =
         , alignTop
         , width (fill |> maximum 100 )
         ] 
-      { label = Input.labelAbove [] (text "PostalCode")
+      { label = Input.labelAbove [ width fill ] (text "Post")
       , text = address.postalCode
       , placeholder = Just (Input.placeholder []( text address.postalCode ))
       , onChange = UpdatePostalCode
@@ -533,18 +534,19 @@ composeName address =
 
 composeStreetInputBlock : List String -> Element Msg
 composeStreetInputBlock streetAddresses =
-  column [ width ( fill |> maximum 350 ), spacing 5 ] (
-      List.indexedMap (\x y -> ( 
-        Input.text [ width fill
-          , htmlAttribute (Html.Attributes.id ("street_" ++ ( String.fromInt x )) )
-          ] { label = (if x == 0 then Input.labelAbove [] ( text "Street" ) else Input.labelHidden "")
-            , text = y
-            , placeholder = Just (Input.placeholder []( text y ))
-            , onChange = UpdateStreet x
-            }
-        ) ) streetAddresses 
-    )
-
+  row [ width (fill |> maximum 360) ] [
+    column [ width fill, spacing 5 ] (
+        List.indexedMap (\x y -> ( 
+          Input.text [ width fill
+            , htmlAttribute (Html.Attributes.id ("street_" ++ ( String.fromInt x )) )
+            ] { label = (if x == 0 then Input.labelAbove [] ( text "Street" ) else Input.labelHidden "")
+              , text = y
+              , placeholder = Just (Input.placeholder []( text y ))
+              , onChange = UpdateStreet x
+              }
+          ) ) streetAddresses 
+      )
+  ]
 
 renderButton : Model -> ButtonAction -> Element Msg
 renderButton  model action =
