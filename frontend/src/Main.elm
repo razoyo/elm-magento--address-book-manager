@@ -7,6 +7,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Events exposing (onClick)
 import Element.Input as Input
+import Element.Font as Font
 
 -- Elm core modules needed
 import Array
@@ -68,7 +69,7 @@ type alias Address = { mageId: String
   , postalCode: String
   , city: String
   , region: String
-  , regionId: String
+  , regionId: Int
   , country: String 
   , isDefaultShipping : Bool
   , isDefaultBilling : Bool
@@ -76,7 +77,7 @@ type alias Address = { mageId: String
               
 newAddress : Address
 newAddress = 
-  Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" "" "US" False False
+  Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" 0 "US" False False
 
 
 -- 
@@ -160,21 +161,23 @@ update msg model =
 
     SaveNewAddress ->
       let
-        checkedAddresses = ensureUniqueDefaults model.editingAddress model.addresses
-        updatedAddresses = Dict.insert "new" model.editingAddress checkedAddresses
+        regionId = lookUpRegionId editAddress.region
+        editAddressWithRegion = { editAddress | regionId = (String.toInt regionId |> Maybe.withDefault 0) }
+        checkedAddresses = ensureUniqueDefaults editAddressWithRegion model.addresses
+        updatedAddresses = Dict.insert "new" editAddressWithRegion checkedAddresses
       in
       ( { model | addresses = updatedAddresses
         , uiStatus = View }
       , Http.post {
         url = "/customer/address/formPost"
-        , body = addressPostEncode model.cookie model.editingAddress
+        , body = addressPostEncode model.cookie editAddressWithRegion
         , expect = Http.expectWhatever Posted
         } 
       )
 
     SaveEditedAddress id ->
       let
-        checkedAddresses = ensureUniqueDefaults model.editingAddress model.addresses
+        checkedAddresses = ensureUniqueDefaults editAddress model.addresses
         updatedAddresses = Dict.insert id model.editingAddress checkedAddresses
       in
       ( { model | addresses = updatedAddresses
@@ -327,6 +330,16 @@ clearShipping : Addresses -> Addresses
 clearShipping addresses =
   Dict.map (\_ v -> { v | isDefaultShipping = False }) addresses  
 
+
+lookUpRegionId : String -> String
+lookUpRegionId region =
+  Dict.filter (\x y -> y == region ) stateOptions
+    |> Dict.toList
+    |> List.head
+    |> Maybe.withDefault ("", "")
+    |> Tuple.first
+
+
 cookieParse : String -> {sessionId: String, formKey: String}
 cookieParse cookie =
   let
@@ -402,21 +415,22 @@ showAddresses addresses =
 
 viewAddress : Address -> Element Msg
 viewAddress address =
-  let
-    debug = Debug.log "view address ID" address.mageId
-  in
   column [ width fill, spacing 10, padding 5, alignTop ] [
      text ( composeName address )
-     , column [] (List.map (\x -> el [] (text x)) address.street)
-     , row [] [ el [] (text address.city)
+     , column [ spacing 10 ] (List.map (\x -> el [] (text x)) address.street)
+     , row [ spacing 10 ] [ el [] (text ( address.city ++ ",") )
        , el [] (text address.region)
        , el [] (text address.postalCode)
      ]
      , el [] (text address.country)
-     , (if address.isDefaultShipping then (el [] (text "Default Shipping"))  else none)
-     , (if address.isDefaultBilling then (el [] (text "Default Billing"))  else none)
-     , el [ onClick (RemoveAddress address.mageId) ] (text "remove")
-     , el [ onClick (EditAddress address.mageId) ] (text "edit")
+     , row [spacing 20, Font.color blue ] [
+       (if address.isDefaultShipping then (el [] (text "Default Shipping"))  else none)
+       , (if address.isDefaultBilling then (el [] (text "Default Billing"))  else none)
+     ]
+     , row [ Font.color blue, spacing 20, Font.size 14 ] [
+       el [ onClick (RemoveAddress address.mageId) ] (text "remove")
+       , el [ onClick (EditAddress address.mageId) ] (text "edit")
+       ]
      ]
 
 
@@ -462,7 +476,7 @@ viewEditAddress model address =
         , placeholder = Nothing
         , onChange = UpdateRegion
         } 
-      , el [ onClick AcceptRegionSuggestion ] (text model.suggestRegion) 
+      , el [ onClick AcceptRegionSuggestion, padding 12 ] (text model.suggestRegion) 
     ]
     , Input.text [ htmlAttribute (Html.Attributes.id "post_code")
         , alignTop
@@ -582,8 +596,14 @@ getAddresses result =
       Ok jsonAddresses ->
         case Decode.decodeString (Decode.list addressDecoder) jsonAddresses of
           Ok v ->
+              let
+                debug = Debug.log "decoded" v
+              in
               List.map ( \x -> ( x.mageId, normalizeStreetBlock x ) ) v |> Dict.fromList
           Err e ->
+              let
+                debug = Debug.log "decode error" e
+              in
               emptyDict
 
       Err _ -> 
@@ -592,7 +612,7 @@ getAddresses result =
 
 normalizeStreetBlock : Address -> Address
 normalizeStreetBlock address =
-      { address | street =  (address.street ++ List.repeat (3 - (List.length address.street)) "") }
+  { address | street =  (address.street ++ List.repeat (3 - (List.length address.street)) "") }
 
 
 addressDecoder : Decoder Address
@@ -610,7 +630,7 @@ addressDecoder =
     |> required "postcode" string
     |> required "city" string
     |> required "region" string
-    |> required "region_id" string
+    |> required "region_id" int
     |> required "country_id" string
     |> required "is_default_shipping" (oneOf [ bool, null False ])
     |> required "is_default_billing" (oneOf [ bool, null False ])
@@ -635,7 +655,7 @@ addressPostEncode sessionData address =
       , Http.stringPart "street[]" street3
       , Http.stringPart "vat_id" ""
       , Http.stringPart "city" address.city
-      , Http.stringPart "region_id" address.regionId
+      , Http.stringPart "region_id" (String.fromInt address.regionId)
       , Http.stringPart "region" address.region
       , Http.stringPart "postcode" address.postalCode
       , Http.stringPart "country_id" "US"
