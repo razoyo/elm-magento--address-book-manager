@@ -28,19 +28,17 @@ We're also using elm-ui for the styling. You can read more about Elm-inspired st
 ### Working on this project
 The Magento module that will replace the address book area with our Elm app is in the backend folder. All of the code for the Elm app is in the frontend folder.
 
-#### Back End
-We have not tested this, yet, in terms of inserting, but, the idea is that you will add the module to a Magento 2.3.x site and drop the production-ready elm-address.js file into backend/ElmAddress/view/frontend/web/js/
-
-So, you'll need your own instance of Magento up and running if you want to test out your code there.
-
 #### Front End
+The front end folder has everything you need to work on the project locally.
+
 We're using webpack so that you can spin up Elm and work interactively with it. We have not yet set up stubs for the html file to target in dev mode and associated stub data to use.
 
-### Building the runtime js file
+### Deploying to Magento
+This project has only been tested on Magento Commerce 2.3 using the Luma theme.
+
 Use the command npm run make:js from the frontend folder. It will build the elm-address.js file and output it to backend/ElmAddress/etc/view/frontend/web/js - thus, when deployed, it should be in the right place to get picked up by Magento (we'll make that happen - has not been tested yet)
 
-### Implementing the js
-Deploy the files from /backend/ElmAddress/... to your Magento instance.
+You'll need to implement the Magento module from the backend section in your Magento. Magento did not have an endpoint that returns JSON data of the addresses, so, we had to add that. Otherwise, you could do the whole thing with the theme.
 
 ### Testing
 Given the limited scope of development and Elm's advantages, we aren't planning to write extensive tests as part of the development process. However, we reserve the right to create some. If we do, we'll use the native Elm testing functions. 
