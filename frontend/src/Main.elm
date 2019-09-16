@@ -157,7 +157,8 @@ update msg model =
         , editingAddress = newAddress }, Cmd.none )
 
     ViewAddresses ->
-      ( { model | uiStatus = View }, Cmd.none )
+      ( { model | uiStatus = View
+        , suggestRegion = "" }, Cmd.none )
 
     SaveNewAddress ->
       let
@@ -378,8 +379,8 @@ view model =
       case model.uiStatus of
         View ->
           column [ width fill ] [ 
-            row [ width fill ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
-            , wrappedRow [ width fill, padding 10 ] ( showAddresses model.addresses ) 
+            row [ width fill, spacing 10 ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
+            , wrappedRow [ width fill, spacing 10, padding 10 ] ( showAddresses model.addresses ) 
             ]
 
         AddNew ->
@@ -416,23 +417,31 @@ showAddresses addresses =
 
 viewAddress : Address -> Element Msg
 viewAddress address =
-  column [ width ( fill |> maximum 360 ), alignTop ] [
-     text ( composeName address )
-     , column [ spacing 10 ] (List.map (\x -> el [] (text x)) address.street)
-     , wrappedRow [ spacing 10, width fill ] [ el [] (text ( address.city ++ ",") )
-       , el [] (text address.region)
-       , el [] (text address.postalCode)
-     ]
-     , el [] (text address.country)
-     , wrappedRow [spacing 20, Font.color blue, width fill ] [
-       (if address.isDefaultShipping then (el [] (text "Default Shipping"))  else none)
-       , (if address.isDefaultBilling then (el [] (text "Default Billing"))  else none)
-     ]
-     , wrappedRow [ Font.color blue, spacing 20, Font.size 14, width fill ] [
-       el [ onClick (RemoveAddress address.mageId) ] (text "remove")
-       , el [ onClick (EditAddress address.mageId) ] (text "edit")
-       ]
-     ]
+  column [ width ( fill |> minimum 250 )
+    , alignTop
+    , spacing 15 ] 
+    [ wrappedRow [ spacing 20, Font.color blue, width fill ] [
+      ( if address.isDefaultShipping then 
+          el [] (text "Default Shipping")  
+        else none 
+        )
+      , ( if address.isDefaultBilling then 
+          el [] ( text "Default Billing")  
+          else none 
+      )
+    ]
+    , text ( composeName address )
+    , column [ spacing 10 ] (List.map (\x -> el [] (text x)) address.street)
+    , wrappedRow [ spacing 10, width fill ] [ el [] (text ( address.city ++ ",") )
+      , el [] (text address.region)
+      , el [] (text address.postalCode)
+    ]
+    , el [] (text address.country)
+    , wrappedRow [ Font.color blue, spacing 20, Font.size 14, width fill ] [
+      el [ onClick (RemoveAddress address.mageId) ] (text "remove")
+      , el [ onClick (EditAddress address.mageId) ] (text "edit")
+      ]
+  ]
 
 
 viewEditAddress : Model -> Address -> Element Msg
@@ -668,11 +677,11 @@ addressPostEncode sessionData address =
 
 -- Styles
 
-blue = Element.rgb255 155 155 238
+blue = Element.rgb255 100 100 238
 
 gray = Element.rgb255 155 155 155
 
-green = Element.rgb255 155 238 155
+green = Element.rgb255 100 238 100
 
 countryButton : String -> Model -> List ( Element.Attribute msg )
 countryButton country model =
