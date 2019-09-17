@@ -21,6 +21,8 @@ import Json.Decode.Pipeline exposing (required, optional, hardcoded)
 
 -- Local app imports
 import Validate exposing (stateOptions)
+import MageComm exposing (getAddresses, normalizeStreetBlock, addressDecoder, addressPostEncode)
+import DataShapes exposing (Address, Addresses, newAddress)
 
 main =
   Browser.element
@@ -45,7 +47,7 @@ type alias Model = {
     uiStatus : UIStates
     , addresses : Addresses
     , editingAddress : Address
-    , suggestRegion : String
+    , suggestRegions : List String
     , cookie : { sessionId: String , formKey: String }
   }
 
@@ -54,31 +56,6 @@ type UIStates = View
   | AddNew 
   | Edit
   
-type alias Addresses
-  = Dict.Dict String Address
-
-type alias Address = { mageId: String
-  , firstName: String
-  , lastName: String
-  , middleName: String
-  , prefix: String
-  , suffix: String
-  , street: List String
-  , company: String
-  , telephone: String
-  , postalCode: String
-  , city: String
-  , region: String
-  , regionId: Int
-  , country: String 
-  , isDefaultShipping : Bool
-  , isDefaultBilling : Bool
-  }
-              
-newAddress : Address
-newAddress = 
-  Address "new" "" "" "" "" "" ["","",""] "" "" "" "" "" 0 "US" False False
-
 
 -- 
 init : String -> ( Model, Cmd Msg )
@@ -86,7 +63,7 @@ init cookie =
   ( { uiStatus = View
     , addresses = Dict.empty 
     , editingAddress = newAddress
-    , suggestRegion = ""
+    , suggestRegions = []
     , cookie = cookieParse cookie
     } 
   , Http.get { url = "/razoyo/customer/addresses/"
@@ -116,7 +93,7 @@ type Msg = Changed Value
   | UpdatePostalCode String
   | UpdateCity String
   | UpdateRegion String
-  | AcceptRegionSuggestion
+  | AcceptRegionSuggestion String
   | UpdateCountry String
   | UpdateIsDefaultShipping Bool 
   | UpdateIsDefaultBilling Bool
@@ -158,7 +135,7 @@ update msg model =
 
     ViewAddresses ->
       ( { model | uiStatus = View
-        , suggestRegion = "" }, Cmd.none )
+        , suggestRegions = [] }, Cmd.none )
 
     SaveNewAddress ->
       let
@@ -264,24 +241,24 @@ update msg model =
     UpdateRegion newRegion ->
       let
         regionOptions = stateOptions -- add option for Canada
-        suggestRegion = 
+        suggestRegions = 
           if ( String.length newRegion ) > 1 then
-            List.head ( Dict.toList ( Dict.filter (\x y -> String.contains newRegion y )  regionOptions )) 
-              |> Maybe.withDefault ( "","" )
-              |> Tuple.second
-          else ""
+            Dict.toList ( Dict.filter (\x y -> String.contains newRegion y )  regionOptions ) 
+              |> List.map Tuple.second
+          else []
         resultAddress = { editAddress | region = newRegion }
       in
         ( { model | editingAddress = resultAddress
-          , suggestRegion = suggestRegion 
+          , suggestRegions = suggestRegions 
           }, Cmd.none 
         )
 
-    AcceptRegionSuggestion ->
+    AcceptRegionSuggestion region ->
       let
-        resultAddress = { editAddress | region = model.suggestRegion }
+        resultAddress = { editAddress | region = region }
       in
-      ( { model | editingAddress = resultAddress }, Cmd.none )
+      ( { model | editingAddress = resultAddress
+        , suggestRegions = [] }, Cmd.none )
 
     UpdateCountry newCountry ->
       let
@@ -486,8 +463,12 @@ viewEditAddress model address =
         , placeholder = Nothing
         , onChange = UpdateRegion
         } 
-      , el [ onClick AcceptRegionSuggestion, padding 12 ] (text model.suggestRegion) 
+        , column [ spacing 10, padding 10 ] ( model.suggestRegions 
+          |> List.map (\x -> el [ onClick ( AcceptRegionSuggestion x) ] (text x) 
+            ) 
+        )
     ]
+         
     , Input.text [ htmlAttribute (Html.Attributes.id "post_code")
         , alignTop
         , width (fill |> maximum 100 )
@@ -595,84 +576,6 @@ renderButton  model action =
           , label = text buttonMessage
           }
 
-
---- HTTP
-
-getAddresses : (Result Http.Error String) -> Addresses
-getAddresses result =
-  let 
-    emptyDict = Dict.empty --Dict.insert "-1" newAddress Dict.empty
-  in
-    case result of
-      Ok jsonAddresses ->
-        case Decode.decodeString (Decode.list addressDecoder) jsonAddresses of
-          Ok v ->
-              let
-                debug = Debug.log "decoded" v
-              in
-              List.map ( \x -> ( x.mageId, normalizeStreetBlock x ) ) v |> Dict.fromList
-          Err e ->
-              let
-                debug = Debug.log "decode error" e
-              in
-              emptyDict
-
-      Err _ -> 
-        emptyDict
-
-
-normalizeStreetBlock : Address -> Address
-normalizeStreetBlock address =
-  { address | street =  (address.street ++ List.repeat (3 - (List.length address.street)) "") }
-
-
-addressDecoder : Decoder Address
-addressDecoder =
-  Decode.succeed Address
-    |> required "id" string
-    |> required "first_name" string 
-    |> required "last_name" string 
-    |> optional "middle_name" (oneOf [ string, null "" ]) ""
-    |> optional "prefix" (oneOf [ string, null "" ]) ""
-    |> optional "suffix" (oneOf [ string, null "" ]) ""
-    |> required "street" (Decode.list string)
-    |> optional "company" (oneOf [ string, null "" ]) ""
-    |> optional "telephone" (oneOf [ string, null "" ]) ""
-    |> required "postcode" string
-    |> required "city" string
-    |> required "region" string
-    |> required "region_id" int
-    |> required "country_id" string
-    |> required "is_default_shipping" (oneOf [ bool, null False ])
-    |> required "is_default_billing" (oneOf [ bool, null False ])
-
-
-addressPostEncode : { sessionId : String, formKey : String } -> Address -> Http.Body
-addressPostEncode sessionData address =
-  let
-    (street1, street2, street3) =
-      case address.street of
-        [s1, s2, s3] -> (s1, s2, s3)
-        _ -> ("", "", "")
-  in
-    Http.multipartBody 
-      [ Http.stringPart "form_key" sessionData.formKey
-      , Http.stringPart "firstname" address.firstName
-      , Http.stringPart "lastname" address.lastName
-      , Http.stringPart "company" address.company
-      , Http.stringPart "telephone" address.telephone
-      , Http.stringPart "street[]" street1
-      , Http.stringPart "street[]" street2
-      , Http.stringPart "street[]" street3
-      , Http.stringPart "vat_id" ""
-      , Http.stringPart "city" address.city
-      , Http.stringPart "region_id" (String.fromInt address.regionId)
-      , Http.stringPart "region" address.region
-      , Http.stringPart "postcode" address.postalCode
-      , Http.stringPart "country_id" "US"
-      , Http.stringPart "default_billing" (if address.isDefaultBilling then "1" else "0")
-      , Http.stringPart "default_shipping" (if address.isDefaultShipping then "1" else "0")
-      ]
 
 
 -- Styles
