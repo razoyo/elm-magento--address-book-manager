@@ -381,15 +381,23 @@ view model =
 showAddresses : Addresses -> List ( Element Msg )
 showAddresses addresses =
   if Dict.size addresses == 0 then
-    [
-      column [ width fill, height (px 300) ] [
+    [ column [ width fill, height (px 300) ] [
         el [ centerX, centerY ] ( text "You have no addresses" )
       ]
     ]
   else
-     
-  Dict.values addresses
-    |> \x -> List.map viewAddress x
+
+  let
+    addressList = Dict.toList addresses |> List.map Tuple.second
+    defaultAddresses = 
+      List.filter (\x -> ( x.isDefaultShipping == True ) || ( x.isDefaultBilling == True ) ) addressList
+
+    nonDefaultAddresses =
+      List.filter (\x -> ( x.isDefaultShipping == False ) && ( x.isDefaultBilling == False ) ) addressList
+  in
+
+  List.append defaultAddresses nonDefaultAddresses
+    |> List.map viewAddress
 
 
 viewAddress : Address -> Element Msg
