@@ -243,7 +243,7 @@ update msg model =
         regionOptions = stateOptions -- add option for Canada
         suggestRegions = 
           if ( String.length newRegion ) > 1 then
-            Dict.toList ( Dict.filter (\x y -> String.contains newRegion y )  regionOptions ) 
+            Dict.toList ( Dict.filter (\x y -> String.contains ( String.toUpper newRegion ) ( String.toUpper y ) )  regionOptions ) 
               |> List.map Tuple.second
           else []
         resultAddress = { editAddress | region = newRegion }
