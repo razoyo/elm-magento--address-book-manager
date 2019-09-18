@@ -243,8 +243,8 @@ update msg model =
         regionOptions = stateOptions -- add option for Canada
         suggestRegions = 
           if ( String.length newRegion ) > 1 then
-            Dict.toList ( Dict.filter (\x y -> String.contains ( String.toUpper newRegion ) ( String.toUpper y ) )  regionOptions ) 
-              |> List.map Tuple.second
+            Dict.filter (\x y -> String.contains ( String.toUpper newRegion ) ( String.toUpper y ) )  regionOptions 
+              |> Dict.values
           else []
         resultAddress = { editAddress | region = newRegion }
       in
@@ -312,10 +312,9 @@ clearShipping addresses =
 lookUpRegionId : String -> String
 lookUpRegionId region =
   Dict.filter (\x y -> y == region ) stateOptions
-    |> Dict.toList
+    |> Dict.values
     |> List.head
-    |> Maybe.withDefault ("", "")
-    |> Tuple.first
+    |> Maybe.withDefault ""
 
 
 cookieParse : String -> {sessionId: String, formKey: String}
@@ -388,7 +387,7 @@ showAddresses addresses =
   else
 
   let
-    addressList = Dict.toList addresses |> List.map Tuple.second
+    addressList = Dict.values addresses
     defaultAddresses = 
       List.filter (\x -> ( x.isDefaultShipping == True ) || ( x.isDefaultBilling == True ) ) addressList
 
