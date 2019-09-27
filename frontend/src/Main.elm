@@ -8,9 +8,9 @@ import Element.Background as Background
 import Element.Events exposing (onClick)
 import Element.Input as Input
 import Element.Font as Font
+import Element.Border as Border
 
 -- Elm core modules needed
-import Array
 import Dict
 import Html exposing (Html)
 import Html.Attributes
@@ -355,12 +355,21 @@ view model =
       case model.uiStatus of
         View ->
           column [ width fill ] [ 
-            row [ width fill, spacing 10 ] [ el [ alignRight, onClick CreateAddress ] (text "Add New") ] 
+            row [ width fill
+            , spacing 10
+            , onClick CreateAddress ] [ 
+              roundButton "+" green
+            ]
             , wrappedRow [ width fill, spacing 10, padding 10 ] ( showAddresses model.addresses ) 
             ]
 
         AddNew ->
-          column [ width fill ] [ row [ width fill ] [ el [ alignRight, onClick ViewAddresses ] (text "X") ] 
+          column [ width fill ] [ 
+            row [ width fill 
+            , spacing 10
+            , onClick ViewAddresses ] [
+              roundButton "X" red
+            ] 
             , wrappedRow [ width fill, spacing 15 ] [ viewEditAddress model model.editingAddress ]
             , wrappedRow [ spacing 25, width fill ] [ renderButton model SaveNew
             , el [ onClick ViewAddresses ] (text "cancel")
@@ -589,9 +598,18 @@ renderButton  model action =
 
 blue = Element.rgb255 100 100 238
 
+
+red = Element.rgb255 238 100 100
+
+
 gray = Element.rgb255 155 155 155
 
-green = Element.rgb255 100 238 100
+
+green = Element.rgb255 100 210 100
+
+
+white = Element.rgb255 255 255 255
+
 
 countryButton : String -> Model -> List ( Element.Attribute msg )
 countryButton country model =
@@ -603,4 +621,18 @@ countryButton country model =
 
   else
     [ Background.color gray, pad ]
+
+
+roundButton : String -> Element.Color -> Element msg
+roundButton char color =
+  column [ alignRight 
+    , Border.rounded 20
+    , Background.color color
+    , height (px 40)
+    , pointer
+    , Font.bold
+    , width (px 40) ] [ el [ Font.color white
+      , centerX
+      , centerY ] (text char)
+  ]
 
